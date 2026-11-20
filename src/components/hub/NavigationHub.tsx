@@ -107,7 +107,7 @@ export const NavigationHub: React.FC<NavigationHubProps> = ({
       <div className="flex-1 flex flex-col items-center justify-center px-3 sm:px-4 py-4 sm:py-10">
         <div className="w-full max-w-2xl mx-auto flex flex-col items-center text-center space-y-3.5 sm:space-y-6">
           <div className="space-y-1 sm:space-y-2">
-            <p className="text-[11px] sm:text-sm font-semibold text-blue-700 dark:text-sky-400 tracking-wide">
+            <p className="text-[11px] sm:text-xs font-semibold text-blue-700 dark:text-sky-400 tracking-wide max-w-xl mx-auto leading-snug">
               {t.hub.eyebrow}
             </p>
             <h1

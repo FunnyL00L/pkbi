@@ -218,8 +218,8 @@ export const SettingsModal: React.FC = () => {
               {authError && (
                 <div className="p-3 rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900 text-rose-700 dark:text-rose-300 text-xs flex items-start gap-2">
                   <AlertCircle size={15} className="shrink-0 mt-0.5" />
-                  <div className="flex-1 space-y-1">
-                    <p>{authError}</p>
+                  <div className="flex-1 min-w-0 space-y-1">
+                    <p className="leading-relaxed break-words">{authError}</p>
                     <button
                       type="button"
                       onClick={clearAuthError}

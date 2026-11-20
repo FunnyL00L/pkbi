@@ -45,10 +45,18 @@ test('sanitizeBlogHtml preserves rich safe Blogger layouts and hardens external 
 
 test('buildInlineImageHtml produces responsive figure markup and escapes caption tags', () => {
   const snippet = buildInlineImageHtml(
-    'https://res.cloudinary.com/demo/image/upload/v1/foto.jpg',
+    'firebase-media://img-1732091234-abc123',
     'Kegiatan <b>Remaja</b>'
   );
   assert.equal(snippet.includes('<figure'), true);
-  assert.equal(snippet.includes('src="https://res.cloudinary.com/demo/image/upload/v1/foto.jpg"'), true);
+  assert.equal(snippet.includes('src="firebase-media://img-1732091234-abc123"'), true);
   assert.equal(snippet.includes('&lt;b&gt;Remaja&lt;/b&gt;'), true);
+
+  const sanitizedGood = sanitizeBlogHtml(snippet);
+  assert.equal(sanitizedGood.includes('src="firebase-media://img-1732091234-abc123"'), true);
+
+  const sanitizedBad = sanitizeBlogHtml(
+    '<img src="firebase-media://bad/path?x=1" /><a href="firebase-media://img-123">link</a>'
+  );
+  assert.equal(sanitizedBad.includes('firebase-media://'), false);
 });

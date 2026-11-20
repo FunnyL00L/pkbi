@@ -15,6 +15,7 @@ import {
 import { SafeImage } from './SafeImage';
 import { buildWhatsAppUrl, WHATSAPP_TEMPLATES } from '../../utils/whatsapp';
 import { sanitizeBlogHtml } from '../../utils/htmlSanitizer';
+import { useHydratedFirebaseHtml } from '../../services/firebaseMediaService';
 
 export interface BlogArticleData {
   id: string;
@@ -50,6 +51,10 @@ export const BlogArticleModal: React.FC<BlogArticleModalProps> = ({
   hasPrev = false,
   hasNext = false,
 }) => {
+  const sanitizedCustomHtml =
+    article?.contentMode === 'html' && article.customHtml ? sanitizeBlogHtml(article.customHtml) : '';
+  const hydratedCustomHtml = useHydratedFirebaseHtml(sanitizedCustomHtml);
+
   if (!article) return null;
 
   const waHref = buildWhatsAppUrl(
@@ -176,10 +181,10 @@ export const BlogArticleModal: React.FC<BlogArticleModalProps> = ({
           </div>
 
           {/* Article Body: Custom Blogger HTML or Standard Paragraphs */}
-          {article.contentMode === 'html' && article.customHtml && article.customHtml.trim() ? (
+          {article.contentMode === 'html' && hydratedCustomHtml.trim() ? (
             <div
               className="blog-custom-html text-sm sm:text-base text-slate-800 dark:text-slate-200 leading-[1.75] space-y-4 overflow-x-auto [&_img]:max-w-full [&_img]:rounded-2xl [&_a]:text-blue-600 dark:[&_a]:text-sky-400 [&_table]:w-full [&_table]:border-collapse"
-              dangerouslySetInnerHTML={{ __html: sanitizeBlogHtml(article.customHtml) }}
+              dangerouslySetInnerHTML={{ __html: hydratedCustomHtml }}
             />
           ) : (
             <div className="space-y-4 text-sm sm:text-base text-slate-700 dark:text-slate-300 leading-[1.75]">

@@ -332,7 +332,7 @@ export const AdminVillageModal: React.FC<AdminVillageModalProps> = ({
           </label>
 
           <CloudinaryMediaField
-            label="Foto Wilayah / Dokumentasi (Cloudinary)"
+            label="Foto Wilayah / Dokumentasi (Firebase)"
             value={imageUrl}
             onChange={setImageUrl}
             mediaType="image"

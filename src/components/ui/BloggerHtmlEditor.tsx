@@ -22,7 +22,8 @@ import {
   buildInlineImageHtml,
   sanitizeBlogHtml,
 } from '../../utils/htmlSanitizer';
-import { CloudinaryMediaField } from './CloudinaryMediaField';
+import { FirebaseMediaField } from './CloudinaryMediaField';
+import { useHydratedFirebaseHtml } from '../../services/firebaseMediaService';
 
 interface BloggerHtmlEditorProps {
   contentMode: 'standard' | 'html';
@@ -52,6 +53,7 @@ export const BloggerHtmlEditor: React.FC<BloggerHtmlEditorProps> = ({
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
 
   const sanitizedPreview = useMemo(() => sanitizeBlogHtml(customHtml), [customHtml]);
+  const hydratedPreview = useHydratedFirebaseHtml(sanitizedPreview);
 
   const insertSnippetAtCursor = (snippet: string) => {
     const el = textareaRef.current;
@@ -366,7 +368,7 @@ export const BloggerHtmlEditor: React.FC<BloggerHtmlEditorProps> = ({
             </div>
           )}
 
-          {/* Inline Image Uploader Drawer (Cloudinary or Direct URL -> inserts <figure><img>) */}
+          {/* Inline Image Uploader Drawer (Firebase or Direct URL -> inserts <figure><img>) */}
           {showImagePanel && htmlTab === 'code' && (
             <div className="p-3 rounded-xl border border-emerald-200 dark:border-emerald-800 bg-emerald-50/60 dark:bg-emerald-950/25 space-y-2.5">
               <div className="flex items-center justify-between gap-2">
@@ -384,12 +386,12 @@ export const BloggerHtmlEditor: React.FC<BloggerHtmlEditorProps> = ({
                 </button>
               </div>
 
-              <CloudinaryMediaField
-                label="Upload via Cloudinary atau Tempel URL Gambar"
+              <FirebaseMediaField
+                label="Upload ke Firebase atau Tempel URL Gambar"
                 value={inlineImgUrl}
                 onChange={setInlineImgUrl}
                 mediaType="image"
-                placeholder="https://res.cloudinary.com/... atau klik Upload"
+                placeholder="Klik Upload Gambar ke Firebase atau tempel URL (https://...)"
               />
 
               <label className="block space-y-1">
@@ -449,10 +451,10 @@ export const BloggerHtmlEditor: React.FC<BloggerHtmlEditorProps> = ({
             </div>
           ) : (
             <div className="p-4 sm:p-5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-[#081024] min-h-[180px] overflow-x-auto">
-              {sanitizedPreview ? (
+              {hydratedPreview ? (
                 <div
                   className="blog-custom-html text-sm text-slate-800 dark:text-slate-200 leading-relaxed space-y-3 [&_img]:max-w-full [&_img]:rounded-xl [&_a]:text-blue-600 dark:[&_a]:text-sky-400 [&_table]:w-full [&_table]:border-collapse"
-                  dangerouslySetInnerHTML={{ __html: sanitizedPreview }}
+                  dangerouslySetInnerHTML={{ __html: hydratedPreview }}
                 />
               ) : (
                 <div className="text-center py-8 text-xs text-slate-400">

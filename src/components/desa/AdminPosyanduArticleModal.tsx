@@ -301,11 +301,11 @@ export const AdminPosyanduArticleModal: React.FC<AdminPosyanduArticleModalProps>
           </div>
 
           <CloudinaryMediaField
-            label="Foto Sampul Dokumentasi (Upload Cloudinary / URL)"
+            label="Foto Sampul Dokumentasi (Simpan ke Firebase / URL)"
             value={imageUrl}
             onChange={setImageUrl}
             mediaType="image"
-            placeholder="https://res.cloudinary.com/..."
+            placeholder="Klik Upload Gambar ke Firebase atau tempel URL (https://...)"
           />
 
           <div className="space-y-1.5">

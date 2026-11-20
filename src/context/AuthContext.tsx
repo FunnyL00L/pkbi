@@ -1,11 +1,14 @@
 import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
 import {
   User,
+  getRedirectResult,
   onAuthStateChanged,
   signInWithPopup,
+  signInWithRedirect,
   signOut,
 } from 'firebase/auth';
 import { doc, getDoc, serverTimestamp, setDoc } from 'firebase/firestore';
+import firebaseConfig from '../../firebase-applet-config.json';
 import {
   auth,
   BOOTSTRAPPED_ADMIN_EMAIL,
@@ -14,6 +17,11 @@ import {
   handleFirestoreError,
   OperationType,
 } from '../firebase';
+import {
+  formatFirebaseAuthError,
+  isRunningInIframe,
+  shouldFallbackToRedirect,
+} from '../utils/authErrorHelpers';
 
 interface AdminAuthContextValue {
   user: User | null;
@@ -74,6 +82,29 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [authError, setAuthError] = useState<string | null>(null);
 
   useEffect(() => {
+    // Complete pending redirect sign-in on standalone deployments (e.g. Vercel mobile browsers)
+    if (!isRunningInIframe()) {
+      void getRedirectResult(auth)
+        .then(async (result) => {
+          if (!result?.user) return;
+          const verifiedAdmin = await resolveIsAdminAccount(result.user);
+          setUser(result.user);
+          setIsAdmin(verifiedAdmin);
+          if (!verifiedAdmin) {
+            setAuthError(
+              `Akun ${result.user.email || 'Gmail ini'} berhasil masuk tetapi belum terdaftar sebagai Admin PKBI. Tampilan tetap dalam mode pengguna publik.`
+            );
+          }
+        })
+        .catch((err) => {
+          const code = (err as { code?: string })?.code || '';
+          if (code) {
+            const host = typeof window !== 'undefined' ? window.location.hostname : '';
+            setAuthError(formatFirebaseAuthError(code, host, firebaseConfig.projectId));
+          }
+        });
+    }
+
     const unsub = onAuthStateChanged(auth, async (nextUser) => {
       setUser(nextUser);
       if (!nextUser) {
@@ -112,13 +143,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       return verifiedAdmin;
     } catch (err) {
       const code = (err as { code?: string })?.code || '';
-      if (code === 'auth/popup-closed-by-user') {
-        setAuthError('Jendela login Google ditutup sebelum selesai.');
-      } else if (code === 'auth/popup-blocked') {
-        setAuthError('Popup login diblokir browser. Izinkan popup untuk login dengan Gmail.');
-      } else {
-        setAuthError('Gagal masuk dengan akun Gmail. Silakan coba lagi.');
+      const insideIframe = isRunningInIframe();
+
+      if (shouldFallbackToRedirect(code, insideIframe)) {
+        try {
+          await signInWithRedirect(auth, googleProvider);
+          return false;
+        } catch (redirectErr) {
+          const redirectCode = (redirectErr as { code?: string })?.code || code;
+          const host = typeof window !== 'undefined' ? window.location.hostname : '';
+          setAuthError(formatFirebaseAuthError(redirectCode, host, firebaseConfig.projectId));
+          return false;
+        }
       }
+
+      const host = typeof window !== 'undefined' ? window.location.hostname : '';
+      setAuthError(formatFirebaseAuthError(code, host, firebaseConfig.projectId));
       return false;
     } finally {
       setAuthLoading(false);

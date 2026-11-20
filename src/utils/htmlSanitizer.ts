@@ -64,8 +64,13 @@ export function sanitizeBlogHtml(rawHtml: string): string {
     (_full, attrName: string, _quoted: string, dbl?: string, sgl?: string, bare?: string) => {
       const rawVal = (dbl ?? sgl ?? bare ?? '').trim();
       const normalized = rawVal.replace(/[\u0000-\u001F\s]+/g, '').toLowerCase();
+      const lowerAttr = attrName.toLowerCase();
+
+      const isSafeFirebaseMedia =
+        lowerAttr === 'src' && /^firebase-media:\/\/[a-zA-Z0-9_-]{3,120}$/.test(rawVal);
 
       const isSafeProtocol =
+        isSafeFirebaseMedia ||
         normalized.startsWith('https://') ||
         normalized.startsWith('http://') ||
         normalized.startsWith('/') ||

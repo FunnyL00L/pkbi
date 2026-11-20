@@ -1,12 +1,17 @@
 import React, { useRef, useState } from 'react';
-import { UploadCloud, Loader2, CheckCircle2, AlertCircle, Link as LinkIcon, Film, Image as ImageIcon } from 'lucide-react';
-import { useCmsData } from '../../context/CmsContext';
-import { uploadMediaToCloudinary } from '../../services/cloudinaryService';
 import {
-  isCloudinaryConfigured,
-  isDirectVideoUrl,
-  resolveCloudinaryConfig,
-} from '../../utils/cloudinaryGasHelpers';
+  UploadCloud,
+  Loader2,
+  CheckCircle2,
+  AlertCircle,
+  Link as LinkIcon,
+  Film,
+  Image as ImageIcon,
+  Database,
+} from 'lucide-react';
+import { isFirebaseMediaRef, uploadMediaToFirebase } from '../../services/firebaseMediaService';
+import { isDirectVideoUrl } from '../../utils/cloudinaryGasHelpers';
+import { SafeImage } from './SafeImage';
 
 interface CloudinaryMediaFieldProps {
   label: string;
@@ -17,7 +22,7 @@ interface CloudinaryMediaFieldProps {
   helperText?: string;
 }
 
-export const CloudinaryMediaField: React.FC<CloudinaryMediaFieldProps> = ({
+export const FirebaseMediaField: React.FC<CloudinaryMediaFieldProps> = ({
   label,
   value,
   onChange,
@@ -25,18 +30,10 @@ export const CloudinaryMediaField: React.FC<CloudinaryMediaFieldProps> = ({
   placeholder,
   helperText,
 }) => {
-  const { integrationConfig } = useCmsData();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
   const [statusMsg, setStatusMsg] = useState<string | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
-
-  const resolvedCloudinary = resolveCloudinaryConfig({
-    cloudName: integrationConfig.cloudinaryCloudName,
-    uploadPreset: integrationConfig.cloudinaryUploadPreset,
-    folder: integrationConfig.cloudinaryFolder,
-  });
-  const cloudinaryReady = isCloudinaryConfigured(resolvedCloudinary);
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -46,20 +43,26 @@ export const CloudinaryMediaField: React.FC<CloudinaryMediaFieldProps> = ({
     setStatusMsg(null);
     try {
       const resolvedType: 'image' | 'video' = mediaType === 'video' ? 'video' : 'image';
-      const result = await uploadMediaToCloudinary(
-        file,
-        resolvedCloudinary,
-        resolvedType
+      const result = await uploadMediaToFirebase(file, resolvedType);
+      onChange(result.url);
+      const kb = Math.max(1, Math.round(result.bytes / 1024));
+      setStatusMsg(
+        result.storageBackend === 'firebase-storage'
+          ? `Berhasil disimpan ke Firebase Storage (${kb} KB).`
+          : `Berhasil dikompresi & disimpan ke Firebase (${kb} KB).`
       );
-      onChange(result.secureUrl);
-      setStatusMsg('Berhasil diunggah ke Cloudinary — tautan media siap disimpan ke Firebase.');
     } catch (err) {
-      setErrorMsg(err instanceof Error ? err.message : 'Gagal mengunggah ke Cloudinary.');
+      setErrorMsg(err instanceof Error ? err.message : 'Gagal menyimpan media ke Firebase.');
     } finally {
       setUploading(false);
       if (fileInputRef.current) fileInputRef.current.value = '';
     }
   };
+
+  const hasRenderableImage =
+    Boolean(value) &&
+    mediaType === 'image' &&
+    (isFirebaseMediaRef(value) || /^https?:\/\//i.test(value) || value.startsWith('/'));
 
   return (
     <div className="space-y-1.5">
@@ -72,10 +75,14 @@ export const CloudinaryMediaField: React.FC<CloudinaryMediaFieldProps> = ({
           type="button"
           disabled={uploading}
           onClick={() => fileInputRef.current?.click()}
-          className="min-h-[30px] px-2.5 rounded-lg bg-sky-600 hover:bg-sky-700 text-white text-[11px] font-semibold flex items-center gap-1 cursor-pointer disabled:opacity-60"
+          className="min-h-[30px] px-2.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-semibold flex items-center gap-1 cursor-pointer disabled:opacity-60 shrink-0"
         >
           {uploading ? <Loader2 size={12} className="animate-spin" /> : <UploadCloud size={12} />}
-          <span>{uploading ? 'Mengunggah...' : `Upload ${mediaType === 'video' ? 'Video' : 'Gambar'} ke Cloudinary`}</span>
+          <span>
+            {uploading
+              ? 'Menyimpan...'
+              : `Upload ${mediaType === 'video' ? 'Video' : 'Gambar'} ke Firebase`}
+          </span>
         </button>
         <input
           ref={fileInputRef}
@@ -87,26 +94,24 @@ export const CloudinaryMediaField: React.FC<CloudinaryMediaFieldProps> = ({
       </div>
 
       <div className="relative">
-        <LinkIcon size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+        {isFirebaseMediaRef(value) ? (
+          <Database size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-emerald-600 dark:text-emerald-400" />
+        ) : (
+          <LinkIcon size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+        )}
         <input
-          type="url"
+          type="text"
           value={value}
           onChange={(e) => onChange(e.target.value)}
           placeholder={
             placeholder ||
             (mediaType === 'video'
-              ? `https://res.cloudinary.com/${resolvedCloudinary.cloudName}/video/upload/... atau link YouTube`
-              : `https://res.cloudinary.com/${resolvedCloudinary.cloudName}/image/upload/...`)
+              ? 'Tempel link YouTube / URL video MP4, atau klik Upload ke Firebase'
+              : 'Klik Upload Gambar ke Firebase atau tempel tautan gambar (https://...)')
           }
           className="w-full min-h-[40px] pl-9 pr-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs text-slate-900 dark:text-white"
         />
       </div>
-
-      {!cloudinaryReady && (
-        <p className="text-[11px] text-amber-700 dark:text-amber-300">
-          Cloud Name (<strong>{resolvedCloudinary.cloudName}</strong>) sudah terhubung. Lengkapi <strong>Unsigned Upload Preset</strong> di <strong>Pengaturan → Pengaturan Media &amp; Firebase</strong> agar bisa upload langsung dari perangkat, atau tempel tautan URL di atas.
-        </p>
-      )}
 
       {helperText && (
         <p className="text-[11px] text-slate-500 dark:text-slate-400">{helperText}</p>
@@ -126,9 +131,9 @@ export const CloudinaryMediaField: React.FC<CloudinaryMediaFieldProps> = ({
         </p>
       )}
 
-      {value && mediaType === 'image' && /^https?:\/\//i.test(value) && (
+      {hasRenderableImage && (
         <div className="mt-1.5 h-24 w-40 rounded-xl overflow-hidden border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-900">
-          <img src={value} alt="Pratinjau Cloudinary" className="w-full h-full object-cover" />
+          <SafeImage src={value} alt="Pratinjau Media Firebase" />
         </div>
       )}
 
@@ -140,3 +145,6 @@ export const CloudinaryMediaField: React.FC<CloudinaryMediaFieldProps> = ({
     </div>
   );
 };
+
+// Backwards-compatible export alias for existing Admin modal imports
+export const CloudinaryMediaField = FirebaseMediaField;

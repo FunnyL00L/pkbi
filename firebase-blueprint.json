@@ -391,6 +391,28 @@
         "kategori", "status", "imageUrl", "ringkasan", "isiBeritaLengkap", "narasumber",
         "pesertaCount", "hasilKegiatan", "isDeleted", "authorUid", "updatedBy", "createdAt", "updatedAt"
       ]
+    },
+    "CmsMediaAsset": {
+      "title": "CmsMediaAsset",
+      "description": "Admin-uploaded compressed image stored directly in Firebase Firestore when Cloud Storage is unavailable.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "minLength": 3, "maxLength": 120, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "fileName": { "type": "string", "minLength": 1, "maxLength": 180 },
+        "mimeType": { "type": "string", "enum": ["image/webp", "image/jpeg", "image/png", "image/gif"] },
+        "dataUrl": { "type": "string", "minLength": 20, "maxLength": 450000 },
+        "bytes": { "type": "integer" },
+        "width": { "type": "integer" },
+        "height": { "type": "integer" },
+        "authorUid": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "updatedBy": { "type": "string", "minLength": 2, "maxLength": 120 },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": [
+        "id", "fileName", "mimeType", "dataUrl", "bytes", "width", "height",
+        "authorUid", "updatedBy", "createdAt", "updatedAt"
+      ]
     }
   },
   "firestore": {
@@ -400,7 +422,7 @@
     },
     "/cmsSettings/{settingId}": {
       "schema": { "$ref": "#/entities/CmsIntegrationConfig" },
-      "description": "Admin-managed optional Cloudinary media upload config (no secrets)."
+      "description": "Admin-managed Firebase portal configuration metadata (no secrets)."
     },
     "/cmsVillages/{villageId}": {
       "schema": { "$ref": "#/entities/CmsVillage" },
@@ -453,6 +475,10 @@
     "/cmsPosyanduArticles/{articleId}": {
       "schema": { "$ref": "#/entities/CmsPosyanduArticle" },
       "description": "Publicly readable, admin-managed Posyandu documentation articles supporting standard and custom Blogger HTML layouts."
+    },
+    "/cmsMedia/{mediaId}": {
+      "schema": { "$ref": "#/entities/CmsMediaAsset" },
+      "description": "Publicly readable by exact ID (no list enumeration), admin-uploaded compressed images stored in Firebase."
     }
   }
 }

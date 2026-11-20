@@ -200,10 +200,10 @@ export const AdminContentModal: React.FC<AdminContentModalProps> = ({
       : kind === 'video'
         ? editingVideo
           ? 'Edit Video Edukasi'
-          : 'Tambah Video Edukasi (Cloudinary / YouTube)'
+          : 'Tambah Video Edukasi (Firebase / YouTube)'
         : editingInfographic
           ? 'Edit Foto & Infografis'
-          : 'Tambah Foto / Infografis (Cloudinary)';
+          : 'Tambah Foto / Infografis (Firebase)';
 
   const modalNode = (
     <div
@@ -294,19 +294,19 @@ export const AdminContentModal: React.FC<AdminContentModalProps> = ({
 
           {kind === 'video' && (
             <CloudinaryMediaField
-              label="File / Tautan Video (Upload Cloudinary MP4 atau Link YouTube)"
+              label="File / Tautan Video (Upload Firebase MP4 atau Link YouTube)"
               value={videoUrl}
               onChange={setVideoUrl}
               mediaType="video"
-              helperText="Tempel tautan video YouTube/MP4 atau unggah ke Cloudinary lalu simpan ke Firebase."
+              helperText="Tempel tautan video YouTube/MP4 atau unggah ke Firebase."
             />
           )}
 
           <CloudinaryMediaField
             label={
               kind === 'video'
-                ? 'Thumbnail / Sampul Video (Cloudinary)'
-                : 'Gambar Utama / Infografis (Cloudinary)'
+                ? 'Thumbnail / Sampul Video (Firebase)'
+                : 'Gambar Utama / Infografis (Firebase)'
             }
             value={imageUrl}
             onChange={setImageUrl}

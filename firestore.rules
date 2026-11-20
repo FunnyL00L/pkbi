@@ -490,6 +490,33 @@ service cloud.firestore {
         data.updatedAt is timestamp;
     }
 
+    function isValidCmsMedia(data, mediaId) {
+      return data.keys().hasAll([
+          'id', 'fileName', 'mimeType', 'dataUrl', 'bytes', 'width', 'height',
+          'authorUid', 'updatedBy', 'createdAt', 'updatedAt'
+        ]) &&
+        data.keys().hasOnly([
+          'id', 'fileName', 'mimeType', 'dataUrl', 'bytes', 'width', 'height',
+          'authorUid', 'updatedBy', 'createdAt', 'updatedAt'
+        ]) &&
+        isValidId(data.id) &&
+        data.id == mediaId &&
+        data.id.size() >= 3 && data.id.size() <= 120 &&
+        data.fileName is string && data.fileName.size() >= 1 && data.fileName.size() <= 180 &&
+        data.mimeType in ['image/webp', 'image/jpeg', 'image/png', 'image/gif'] &&
+        data.dataUrl is string &&
+        data.dataUrl.size() >= 20 &&
+        data.dataUrl.size() <= 450000 &&
+        data.dataUrl[0:11] == 'data:image/' &&
+        data.bytes is int && data.bytes >= 1 && data.bytes <= 450000 &&
+        data.width is int && data.width >= 1 && data.width <= 4096 &&
+        data.height is int && data.height >= 1 && data.height <= 4096 &&
+        isValidId(data.authorUid) &&
+        data.updatedBy is string && data.updatedBy.size() >= 2 && data.updatedBy.size() <= 120 &&
+        data.createdAt is timestamp &&
+        data.updatedAt is timestamp;
+    }
+
     // =========================================================================
     // COLLECTION 1: /admins/{uid} (PII Isolated — No List Enumeration)
     // =========================================================================
@@ -903,6 +930,24 @@ service cloud.firestore {
         ]) &&
         isAdmin();
       allow delete: if isVerifiedUser() && isValidId(articleId) && isAdmin();
+    }
+
+    // =========================================================================
+    // COLLECTION 16: /cmsMedia/{mediaId}
+    // Public single-document get by exact ID (no list enumeration); Admin-only writes
+    // =========================================================================
+    match /cmsMedia/{mediaId} {
+      allow get: if isValidId(mediaId) && existing().id == mediaId;
+      allow list: if false;
+      allow create: if isVerifiedUser() &&
+        isValidId(mediaId) &&
+        isValidCmsMedia(incoming(), mediaId) &&
+        incoming().authorUid == request.auth.uid &&
+        incoming().createdAt == request.time &&
+        incoming().updatedAt == request.time &&
+        isAdmin();
+      allow update: if false;
+      allow delete: if isVerifiedUser() && isValidId(mediaId) && isAdmin();
     }
   }
 }

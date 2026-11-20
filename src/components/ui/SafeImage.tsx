@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Image as ImageIcon } from 'lucide-react';
+import { useFirebaseMediaUrl } from '../../services/firebaseMediaService';
 
 interface SafeImageProps {
   src: string;
@@ -14,9 +15,24 @@ export const SafeImage: React.FC<SafeImageProps> = ({
   className = 'w-full h-full object-cover',
   fallbackLabel,
 }) => {
+  const { resolvedUrl, loading } = useFirebaseMediaUrl(src);
   const [hasError, setHasError] = useState(false);
 
-  if (hasError || !src) {
+  useEffect(() => {
+    setHasError(false);
+  }, [resolvedUrl, src]);
+
+  if (loading) {
+    return (
+      <div
+        role="img"
+        aria-label={alt}
+        className="w-full h-full animate-pulse bg-gradient-to-br from-slate-200 via-slate-100 to-blue-100 dark:from-slate-800 dark:via-slate-900 dark:to-blue-950"
+      />
+    );
+  }
+
+  if (hasError || !resolvedUrl) {
     return (
       <div
         role="img"
@@ -33,7 +49,7 @@ export const SafeImage: React.FC<SafeImageProps> = ({
 
   return (
     <img
-      src={src}
+      src={resolvedUrl}
       alt={alt}
       referrerPolicy="no-referrer"
       onError={() => setHasError(true)}

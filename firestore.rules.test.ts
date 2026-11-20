@@ -70,4 +70,9 @@ test('Dirty Dozen #5-#12: enforces strict keys, ID regex, server timestamps, imm
   // #13 Blogger customHtml DoW cap and contentMode allowlist
   assert.ok(rules.includes("data.contentMode in ['standard', 'html']"));
   assert.ok(rules.includes('data.customHtml.size() <= 50000'));
+  // #14 Firebase cmsMedia image storage bounds & no list enumeration
+  assert.ok(rules.includes('function isValidCmsMedia(data, mediaId)'));
+  assert.ok(rules.includes("data.dataUrl[0:11] == 'data:image/'"));
+  assert.ok(rules.includes('data.dataUrl.size() <= 450000'));
+  assert.ok(rules.includes('match /cmsMedia/{mediaId}'));
 });

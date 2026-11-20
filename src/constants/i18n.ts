@@ -71,7 +71,8 @@ export const I18N: Record<AppLanguage, LocalizedStrings> = {
       },
     },
     hub: {
-      eyebrow: 'Project ECCD (Early Childhood Care and Development) · Bali Utara',
+      eyebrow:
+        'Project ECCD (Expanding Client-Centered Family Planning and Sexual and Reproductive Health Delivery) · Bali Utara',
       headline: 'Portal Layanan Mobile Project ECCD PKBI Buleleng',
       subheadline:
         'Jelajahi pemetaan layanan desa di 9 kecamatan, pantau Desa Harmony, akses skrining calon pengantin, edukasi kespro, dan konsultasi QnA rahasia.',
@@ -134,7 +135,8 @@ export const I18N: Record<AppLanguage, LocalizedStrings> = {
       },
     },
     hub: {
-      eyebrow: 'Project ECCD (Early Childhood Care and Development) · North Bali',
+      eyebrow:
+        'Project ECCD (Expanding Client-Centered Family Planning and Sexual and Reproductive Health Delivery) · North Bali',
       headline: 'PKBI Buleleng ECCD Mobile Portal',
       subheadline:
         'Explore village service points across 9 districts, Desa Harmony monitoring, premarital screening info, reproductive health gallery, and private QnA.',
@@ -197,7 +199,8 @@ export const I18N: Record<AppLanguage, LocalizedStrings> = {
       },
     },
     hub: {
-      eyebrow: 'Project ECCD (Early Childhood Care and Development) · Bali Kaja',
+      eyebrow:
+        'Project ECCD (Expanding Client-Centered Family Planning and Sexual and Reproductive Health Delivery) · Bali Kaja',
       headline: 'Portal Layanan Mobile Project ECCD PKBI Buleleng',
       subheadline:
         'Cingak pemetaan desa ring 9 kecamatan, Desa Harmony, layanan skrining calon pengantin, edukasi kespro, lan konsultasi QnA rahasia.',
