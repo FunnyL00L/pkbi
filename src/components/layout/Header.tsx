@@ -1,8 +1,9 @@
 import React from 'react';
-import { ArrowLeft, SlidersHorizontal } from 'lucide-react';
+import { ArrowLeft, SlidersHorizontal, ShieldCheck } from 'lucide-react';
 import { BrandLogo } from './BrandLogo';
 import { ContentCategory } from '../../types';
 import { useAppTheme } from '../../context/ThemeContext';
+import { useAdminAuth } from '../../context/AuthContext';
 import { I18N } from '../../constants/i18n';
 
 interface HeaderProps {
@@ -13,9 +14,10 @@ interface HeaderProps {
 
 const NAV_CATEGORIES: ContentCategory[] = [
   'map',
-  'desa-binaan',
-  'pendaftaran-qa',
-  'edukasi-interaktif',
+  'desa-harmony',
+  'catin',
+  'edukasi-kespro',
+  'qna',
 ];
 
 export const Header: React.FC<HeaderProps> = ({
@@ -24,19 +26,20 @@ export const Header: React.FC<HeaderProps> = ({
   onBackToMainMenu,
 }) => {
   const { toggleSettings, language } = useAppTheme();
+  const { isAdminMode } = useAdminAuth();
   const t = I18N[language];
   const sectionMeta = t.sectionTitles[activeCategory];
 
   return (
-    <header className="sticky top-0 z-40 h-13 lg:h-16 bg-white/95 dark:bg-[#070e22]/95 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 text-slate-900 dark:text-slate-50 transition-colors">
-      <div className="max-w-7xl mx-auto h-full px-3 sm:px-6 lg:px-8 flex items-center justify-between gap-4 lg:gap-8">
+    <header className="sticky top-0 z-40 h-14 lg:h-16 bg-white/95 dark:bg-[#070e22]/95 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 text-slate-900 dark:text-slate-50 transition-colors">
+      <div className="max-w-7xl mx-auto h-full px-3 sm:px-6 lg:px-8 flex items-center justify-between gap-4 lg:gap-6">
         {/* Zone 1: Brand / Back to Hub */}
         <div className="flex items-center gap-2.5 min-w-0">
           <button
             id="btn-back-to-main-menu"
             type="button"
             onClick={onBackToMainMenu}
-            className="min-h-[40px] min-w-[40px] lg:min-w-0 lg:px-3 lg:py-1.5 rounded-xl flex items-center justify-center gap-2 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer shrink-0 focus-visible:outline-2 focus-visible:outline-blue-600"
+            className="min-h-[40px] min-w-[40px] lg:min-w-0 lg:px-3 lg:py-1.5 rounded-xl flex items-center justify-center gap-1.5 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer shrink-0 focus-visible:outline-2 focus-visible:outline-blue-600"
             aria-label={t.backToHome}
           >
             <ArrowLeft size={18} />
@@ -50,7 +53,7 @@ export const Header: React.FC<HeaderProps> = ({
             onClick={onBackToMainMenu}
             className="flex items-center gap-2 min-w-0 cursor-pointer text-left focus-visible:outline-2 focus-visible:outline-blue-600 rounded-lg"
           >
-            <BrandLogo size={30} className="hidden sm:flex" />
+            <BrandLogo size={30} className="hidden sm:flex shrink-0" />
             <span className="text-sm sm:text-base font-bold font-serif tracking-tight text-slate-900 dark:text-white whitespace-nowrap truncate">
               <span className="lg:hidden">{sectionMeta.short}</span>
               <span className="hidden lg:inline">{t.portalName}</span>
@@ -60,14 +63,15 @@ export const Header: React.FC<HeaderProps> = ({
 
         {/* Zone 2: Desktop Single-Line Navigation Links */}
         <nav
-          aria-label="Navigasi Portal PKBI"
-          className="hidden lg:flex items-center gap-6 text-sm font-medium"
+          aria-label="Navigasi Portal ECCD PKBI"
+          className="hidden lg:flex items-center gap-5 xl:gap-7 text-sm font-medium"
         >
           {NAV_CATEGORIES.map((cat) => {
             const isActive = activeCategory === cat;
             return (
               <button
                 key={cat}
+                id={`nav-desktop-${cat}`}
                 type="button"
                 onClick={() => onSelectCategory(cat)}
                 aria-current={isActive ? 'page' : undefined}
@@ -83,8 +87,20 @@ export const Header: React.FC<HeaderProps> = ({
           })}
         </nav>
 
-        {/* Zone 3: Single Primary Settings Action */}
-        <div className="flex items-center shrink-0">
+        {/* Zone 3: Settings Action (+ Active Admin Indicator when logged in) */}
+        <div className="flex items-center gap-2 shrink-0">
+          {isAdminMode && (
+            <button
+              id="btn-header-admin-mode"
+              type="button"
+              onClick={toggleSettings}
+              title="Mode Admin Aktif — Klik untuk kelola sesi"
+              className="min-h-[36px] px-2.5 py-1 rounded-xl border border-emerald-300 dark:border-emerald-700 bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 flex items-center gap-1.5 text-[11px] font-bold cursor-pointer whitespace-nowrap"
+            >
+              <ShieldCheck size={14} />
+              <span className="hidden sm:inline">Mode Admin</span>
+            </button>
+          )}
           <button
             id="btn-pkbi-logo-settings"
             type="button"

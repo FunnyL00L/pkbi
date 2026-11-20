@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import { SafeImage } from './SafeImage';
 import { buildWhatsAppUrl, WHATSAPP_TEMPLATES } from '../../utils/whatsapp';
+import { sanitizeBlogHtml } from '../../utils/htmlSanitizer';
 
 export interface BlogArticleData {
   id: string;
@@ -26,6 +27,8 @@ export interface BlogArticleData {
   imageUrl: string;
   lead: string;
   bodyParagraphs: string[];
+  contentMode?: 'standard' | 'html';
+  customHtml?: string;
   highlights?: string[];
   participantCount?: number;
 }
@@ -50,7 +53,7 @@ export const BlogArticleModal: React.FC<BlogArticleModalProps> = ({
   if (!article) return null;
 
   const waHref = buildWhatsAppUrl(
-    `Om Swastiastu Tim PKBI Buleleng. Saya membaca artikel "${article.title}" dan ingin bertanya lebih lanjut.`
+    `Salam sehat, saya izin bertanya lebih lanjut terkait artikel "${article.title}" kepada Tim PKBI Buleleng.`
   );
 
   const modalContent = (
@@ -172,12 +175,19 @@ export const BlogArticleModal: React.FC<BlogArticleModalProps> = ({
             {article.lead}
           </div>
 
-          {/* Article Body Paragraphs */}
-          <div className="space-y-4 text-sm sm:text-base text-slate-700 dark:text-slate-300 leading-[1.75]">
-            {article.bodyParagraphs.map((paragraph, idx) => (
-              <p key={idx}>{paragraph}</p>
-            ))}
-          </div>
+          {/* Article Body: Custom Blogger HTML or Standard Paragraphs */}
+          {article.contentMode === 'html' && article.customHtml && article.customHtml.trim() ? (
+            <div
+              className="blog-custom-html text-sm sm:text-base text-slate-800 dark:text-slate-200 leading-[1.75] space-y-4 overflow-x-auto [&_img]:max-w-full [&_img]:rounded-2xl [&_a]:text-blue-600 dark:[&_a]:text-sky-400 [&_table]:w-full [&_table]:border-collapse"
+              dangerouslySetInnerHTML={{ __html: sanitizeBlogHtml(article.customHtml) }}
+            />
+          ) : (
+            <div className="space-y-4 text-sm sm:text-base text-slate-700 dark:text-slate-300 leading-[1.75]">
+              {article.bodyParagraphs.map((paragraph, idx) => (
+                <p key={idx}>{paragraph}</p>
+              ))}
+            </div>
+          )}
 
           {/* Key Outcomes / Capaian */}
           {article.highlights && article.highlights.length > 0 && (

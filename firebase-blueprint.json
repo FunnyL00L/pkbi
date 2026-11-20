@@ -1,0 +1,458 @@
+{
+  "entities": {
+    "AdminUser": {
+      "title": "AdminUser",
+      "description": "Registered administrator account authorized to manage ECCD PKBI Buleleng portal content.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "email": { "type": "string", "format": "email", "minLength": 5, "maxLength": 160 },
+        "displayName": { "type": "string", "minLength": 1, "maxLength": 120 },
+        "role": { "type": "string", "enum": ["admin"] },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["uid", "email", "displayName", "role", "createdAt"]
+    },
+    "CmsIntegrationConfig": {
+      "title": "CmsIntegrationConfig",
+      "description": "Admin-managed optional Cloudinary media upload endpoint configuration stored in Firebase Firestore (no secrets stored).",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "minLength": 1, "maxLength": 64, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "gasWebAppUrl": { "type": "string", "minLength": 0, "maxLength": 500 },
+        "cloudinaryCloudName": { "type": "string", "minLength": 0, "maxLength": 120 },
+        "cloudinaryUploadPreset": { "type": "string", "minLength": 0, "maxLength": 120 },
+        "cloudinaryFolder": { "type": "string", "minLength": 0, "maxLength": 120 },
+        "autoSyncGas": { "type": "boolean" },
+        "authorUid": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "updatedBy": { "type": "string", "minLength": 2, "maxLength": 120 },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": [
+        "id", "gasWebAppUrl", "cloudinaryCloudName", "cloudinaryUploadPreset",
+        "cloudinaryFolder", "autoSyncGas", "authorUid", "updatedBy", "createdAt", "updatedAt"
+      ]
+    },
+    "CmsVillage": {
+      "title": "CmsVillage",
+      "description": "Custom or updated village/kelurahan marker across Kabupaten Buleleng managed by Admin.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "name": { "type": "string", "minLength": 2, "maxLength": 140 },
+        "kecamatanId": { "type": "string", "minLength": 1, "maxLength": 64, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "kecamatanName": { "type": "string", "minLength": 2, "maxLength": 120 },
+        "lat": { "type": "number" },
+        "lng": { "type": "number" },
+        "population": { "type": "integer" },
+        "posyanduCount": { "type": "integer" },
+        "stuntingPct": { "type": "number" },
+        "statusProgram": { "type": "string", "enum": ["Aktif ECCD Mobile", "Desa Binaan Utama", "Siaga Layanan"] },
+        "deskripsi": { "type": "string", "minLength": 3, "maxLength": 1200 },
+        "totalRecipients": { "type": "integer" },
+        "lakiLaki": { "type": "integer" },
+        "perempuan": { "type": "integer" },
+        "imageUrl": { "type": "string", "minLength": 0, "maxLength": 600 },
+        "isDeleted": { "type": "boolean" },
+        "authorUid": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "updatedBy": { "type": "string", "minLength": 2, "maxLength": 120 },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": [
+        "id", "name", "kecamatanId", "kecamatanName", "lat", "lng",
+        "population", "posyanduCount", "stuntingPct", "statusProgram", "deskripsi",
+        "totalRecipients", "lakiLaki", "perempuan", "isDeleted", "authorUid", "updatedBy", "createdAt", "updatedAt"
+      ]
+    },
+    "VillageAgenda": {
+      "title": "VillageAgenda",
+      "description": "Village-level ECCD mobile service activity managed by Admin Relawan PKBI Buleleng.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "villageId": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "kecamatanId": { "type": "string", "minLength": 1, "maxLength": 64, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "title": { "type": "string", "minLength": 3, "maxLength": 180 },
+        "category": { "type": "string", "minLength": 2, "maxLength": 80 },
+        "date": { "type": "string", "minLength": 4, "maxLength": 32 },
+        "displayDate": { "type": "string", "minLength": 4, "maxLength": 80 },
+        "time": { "type": "string", "minLength": 3, "maxLength": 60 },
+        "status": { "type": "string", "enum": ["Terlaksana", "Terjadwal"] },
+        "location": { "type": "string", "minLength": 3, "maxLength": 160 },
+        "facilitator": { "type": "string", "minLength": 3, "maxLength": 140 },
+        "participants": { "type": "integer" },
+        "summary": { "type": "string", "minLength": 5, "maxLength": 1200 },
+        "galleryImages": { "type": "array", "description": "Bounded list of up to 5 Cloudinary/image URLs." },
+        "authorUid": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "updatedBy": { "type": "string", "minLength": 3, "maxLength": 120 },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": [
+        "id", "villageId", "kecamatanId", "title", "category", "date", "displayDate",
+        "time", "status", "location", "facilitator", "participants", "summary",
+        "galleryImages", "authorUid", "updatedBy", "createdAt", "updatedAt"
+      ]
+    },
+    "DeletedSeedAgenda": {
+      "title": "DeletedSeedAgenda",
+      "description": "Tombstone record indicating a default seeded agenda was deleted by an admin.",
+      "type": "object",
+      "properties": {
+        "agendaId": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "villageId": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "authorUid": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["agendaId", "villageId", "authorUid", "createdAt"]
+    },
+    "FosterFamily": {
+      "title": "FosterFamily",
+      "description": "Desa Harmony foster family record (Stunting child monthly growth curve & WHO Z-Score or Ibu Hamil KEK) using initials.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "codeName": { "type": "string", "minLength": 2, "maxLength": 60 },
+        "guardianOrMotherName": { "type": "string", "minLength": 2, "maxLength": 80 },
+        "banjar": { "type": "string", "minLength": 2, "maxLength": 80 },
+        "category": { "type": "string", "enum": ["stunting", "ibu-hamil-kek"] },
+        "categoryLabel": { "type": "string", "minLength": 2, "maxLength": 80 },
+        "targetName": { "type": "string", "minLength": 2, "maxLength": 100 },
+        "childAgeMonths": { "type": "integer" },
+        "childSex": { "type": "string", "enum": ["L", "P"] },
+        "baselineMetric": { "type": "string", "minLength": 2, "maxLength": 200 },
+        "currentMetric": { "type": "string", "minLength": 2, "maxLength": 200 },
+        "progressPct": { "type": "integer" },
+        "mentorName": { "type": "string", "minLength": 2, "maxLength": 120 },
+        "recordedBy": { "type": "string", "minLength": 2, "maxLength": 120 },
+        "interventions": { "type": "array", "description": "Bounded list of up to 10 intervention strings." },
+        "monthlyGrowth": { "type": "array", "description": "Bounded list of up to 60 monthly height/weight/BMI growth points." },
+        "statusLabel": { "type": "string", "enum": ["Progres Baik", "Pemulihan Intensif", "Target Tercapai"] },
+        "isDeleted": { "type": "boolean" },
+        "authorUid": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": [
+        "id", "codeName", "guardianOrMotherName", "banjar", "category", "categoryLabel",
+        "targetName", "baselineMetric", "currentMetric", "progressPct", "mentorName",
+        "recordedBy", "interventions", "statusLabel", "isDeleted", "authorUid", "createdAt", "updatedAt"
+      ]
+    },
+    "CmsArticle": {
+      "title": "CmsArticle",
+      "description": "Educational article managed by Admin with Cloudinary image URL and optional reference link.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "title": { "type": "string", "minLength": 3, "maxLength": 200 },
+        "category": { "type": "string", "minLength": 2, "maxLength": 80 },
+        "readTime": { "type": "string", "minLength": 2, "maxLength": 40 },
+        "author": { "type": "string", "minLength": 2, "maxLength": 120 },
+        "dateText": { "type": "string", "minLength": 2, "maxLength": 60 },
+        "imageUrl": { "type": "string", "minLength": 0, "maxLength": 600 },
+        "sourceLink": { "type": "string", "minLength": 0, "maxLength": 600 },
+        "summary": { "type": "string", "minLength": 5, "maxLength": 1000 },
+        "keyTakeaways": { "type": "array" },
+        "bodyParagraphs": { "type": "array" },
+        "contentMode": { "type": "string", "enum": ["standard", "html"], "maxLength": 20 },
+        "customHtml": { "type": "string", "minLength": 0, "maxLength": 50000 },
+        "checklist": { "type": "array" },
+        "isDeleted": { "type": "boolean" },
+        "authorUid": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "updatedBy": { "type": "string", "minLength": 2, "maxLength": 120 },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": [
+        "id", "title", "category", "readTime", "author", "dateText", "imageUrl",
+        "summary", "keyTakeaways", "bodyParagraphs", "checklist", "isDeleted",
+        "authorUid", "updatedBy", "createdAt", "updatedAt"
+      ]
+    },
+    "CmsVideo": {
+      "title": "CmsVideo",
+      "description": "Multimedia educational video storing Cloudinary video & thumbnail URLs or YouTube links.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "title": { "type": "string", "minLength": 3, "maxLength": 200 },
+        "kategori": { "type": "string", "minLength": 2, "maxLength": 80 },
+        "durasi": { "type": "string", "minLength": 2, "maxLength": 40 },
+        "narasumber": { "type": "string", "minLength": 2, "maxLength": 140 },
+        "deskripsi": { "type": "string", "minLength": 5, "maxLength": 1200 },
+        "imageUrl": { "type": "string", "minLength": 0, "maxLength": 600 },
+        "videoUrl": { "type": "string", "minLength": 0, "maxLength": 600 },
+        "ringkasanPoin": { "type": "array" },
+        "isDeleted": { "type": "boolean" },
+        "authorUid": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "updatedBy": { "type": "string", "minLength": 2, "maxLength": 120 },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": [
+        "id", "title", "kategori", "durasi", "narasumber", "deskripsi", "imageUrl",
+        "ringkasanPoin", "isDeleted", "authorUid", "updatedBy", "createdAt", "updatedAt"
+      ]
+    },
+    "CmsInfographic": {
+      "title": "CmsInfographic",
+      "description": "Educational photo or infographic storing Cloudinary image URL and optional external link.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "title": { "type": "string", "minLength": 3, "maxLength": 180 },
+        "category": { "type": "string", "minLength": 2, "maxLength": 80 },
+        "caption": { "type": "string", "minLength": 3, "maxLength": 1000 },
+        "imageUrl": { "type": "string", "minLength": 0, "maxLength": 600 },
+        "linkUrl": { "type": "string", "minLength": 0, "maxLength": 600 },
+        "highlights": { "type": "array" },
+        "isDeleted": { "type": "boolean" },
+        "authorUid": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "updatedBy": { "type": "string", "minLength": 2, "maxLength": 120 },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": [
+        "id", "title", "category", "caption", "imageUrl", "highlights",
+        "isDeleted", "authorUid", "updatedBy", "createdAt", "updatedAt"
+      ]
+    },
+    "CmsFaq": {
+      "title": "CmsFaq",
+      "description": "Curated QnA FAQ item managed by Admin (user QnA submissions are never stored).",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "categoryId": { "type": "string", "enum": ["kesehatan-reproduksi", "kesehatan-mental", "layanan-catin", "pertanyaan-lainnya"] },
+        "question": { "type": "string", "minLength": 5, "maxLength": 300 },
+        "answer": { "type": "string", "minLength": 5, "maxLength": 1600 },
+        "answeredBy": { "type": "string", "minLength": 2, "maxLength": 140 },
+        "isDeleted": { "type": "boolean" },
+        "authorUid": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "updatedBy": { "type": "string", "minLength": 2, "maxLength": 120 },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": [
+        "id", "categoryId", "question", "answer", "answeredBy",
+        "isDeleted", "authorUid", "updatedBy", "createdAt", "updatedAt"
+      ]
+    },
+    "CmsPosyandu": {
+      "title": "CmsPosyandu",
+      "description": "Desa Harmony Posyandu unit schedule and monitoring entry stored in Firebase Firestore.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "posyanduName": { "type": "string", "minLength": 2, "maxLength": 140 },
+        "banjar": { "type": "string", "minLength": 2, "maxLength": 120 },
+        "schedule": { "type": "string", "minLength": 2, "maxLength": 140 },
+        "nextSession": { "type": "string", "minLength": 2, "maxLength": 120 },
+        "leadMidwife": { "type": "string", "minLength": 2, "maxLength": 140 },
+        "balitaCount": { "type": "integer" },
+        "bumilCount": { "type": "integer" },
+        "description": { "type": "string", "minLength": 3, "maxLength": 1200 },
+        "imageUrl": { "type": "string", "minLength": 0, "maxLength": 600 },
+        "highlights": { "type": "array" },
+        "isDeleted": { "type": "boolean" },
+        "authorUid": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "updatedBy": { "type": "string", "minLength": 2, "maxLength": 120 },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": [
+        "id", "posyanduName", "banjar", "schedule", "nextSession", "leadMidwife",
+        "balitaCount", "bumilCount", "description", "imageUrl", "highlights",
+        "isDeleted", "authorUid", "updatedBy", "createdAt", "updatedAt"
+      ]
+    },
+    "CmsYouthArticle": {
+      "title": "CmsYouthArticle",
+      "description": "Forum Remaja Desa Harmony blog article managed by Admin in Firebase Firestore.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "programName": { "type": "string", "minLength": 3, "maxLength": 180 },
+        "forumName": { "type": "string", "minLength": 2, "maxLength": 120 },
+        "schedule": { "type": "string", "minLength": 2, "maxLength": 140 },
+        "participantCount": { "type": "integer" },
+        "facilitator": { "type": "string", "minLength": 2, "maxLength": 140 },
+        "topicFocus": { "type": "string", "minLength": 2, "maxLength": 160 },
+        "description": { "type": "string", "minLength": 5, "maxLength": 1200 },
+        "imageUrl": { "type": "string", "minLength": 0, "maxLength": 600 },
+        "outputs": { "type": "array" },
+        "bodyParagraphs": { "type": "array" },
+        "contentMode": { "type": "string", "enum": ["standard", "html"], "maxLength": 20 },
+        "customHtml": { "type": "string", "minLength": 0, "maxLength": 50000 },
+        "dateText": { "type": "string", "minLength": 0, "maxLength": 80 },
+        "readTime": { "type": "string", "minLength": 0, "maxLength": 40 },
+        "isDeleted": { "type": "boolean" },
+        "authorUid": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "updatedBy": { "type": "string", "minLength": 2, "maxLength": 120 },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": [
+        "id", "programName", "forumName", "schedule", "participantCount", "facilitator",
+        "topicFocus", "description", "imageUrl", "outputs", "bodyParagraphs",
+        "isDeleted", "authorUid", "updatedBy", "createdAt", "updatedAt"
+      ]
+    },
+    "CmsPamphlet": {
+      "title": "CmsPamphlet",
+      "description": "Catin educational pamphlet card & downloadable poster managed by Admin in Firebase Firestore.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "title": { "type": "string", "minLength": 3, "maxLength": 180 },
+        "subtitle": { "type": "string", "minLength": 2, "maxLength": 200 },
+        "category": { "type": "string", "minLength": 2, "maxLength": 80 },
+        "imageUrl": { "type": "string", "minLength": 0, "maxLength": 600 },
+        "summary": { "type": "string", "minLength": 5, "maxLength": 1000 },
+        "keyPoints": { "type": "array" },
+        "recommendedAction": { "type": "string", "minLength": 3, "maxLength": 300 },
+        "isDeleted": { "type": "boolean" },
+        "authorUid": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "updatedBy": { "type": "string", "minLength": 2, "maxLength": 120 },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": [
+        "id", "title", "subtitle", "category", "imageUrl", "summary", "keyPoints",
+        "recommendedAction", "isDeleted", "authorUid", "updatedBy", "createdAt", "updatedAt"
+      ]
+    },
+    "CmsDisease": {
+      "title": "CmsDisease",
+      "description": "IMS sexual health disease prevention catalog item managed by Admin in Firebase Firestore.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "namaPenyakit": { "type": "string", "minLength": 2, "maxLength": 160 },
+        "singkatan": { "type": "string", "minLength": 1, "maxLength": 40 },
+        "penyebab": { "type": "string", "minLength": 3, "maxLength": 600 },
+        "kategori": { "type": "string", "minLength": 2, "maxLength": 100 },
+        "tingkatBahaya": { "type": "string", "enum": ["Tinggi", "Sangat Tinggi", "Perlu Perhatian Khusus"] },
+        "imageUrl": { "type": "string", "minLength": 0, "maxLength": 600 },
+        "gejalaPria": { "type": "array" },
+        "gejalaWanita": { "type": "array" },
+        "caraPenularan": { "type": "array" },
+        "metodePencegahan": { "type": "array" },
+        "pengobatan": { "type": "string", "minLength": 3, "maxLength": 1000 },
+        "skriningPranikah": { "type": "string", "minLength": 3, "maxLength": 1000 },
+        "mitosFakta": { "type": "array" },
+        "isDeleted": { "type": "boolean" },
+        "authorUid": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "updatedBy": { "type": "string", "minLength": 2, "maxLength": 120 },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": [
+        "id", "namaPenyakit", "singkatan", "penyebab", "kategori", "tingkatBahaya",
+        "gejalaPria", "gejalaWanita", "caraPenularan", "metodePencegahan",
+        "pengobatan", "skriningPranikah", "mitosFakta", "isDeleted",
+        "authorUid", "updatedBy", "createdAt", "updatedAt"
+      ]
+    },
+    "CmsPosyanduArticle": {
+      "title": "CmsPosyanduArticle",
+      "description": "Desa Harmony Posyandu documentation article supporting standard text or custom Blogger HTML stored in Firebase Firestore.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "desaName": { "type": "string", "minLength": 2, "maxLength": 120 },
+        "kecamatanName": { "type": "string", "minLength": 2, "maxLength": 120 },
+        "title": { "type": "string", "minLength": 3, "maxLength": 200 },
+        "hari": { "type": "string", "minLength": 2, "maxLength": 40 },
+        "tanggal": { "type": "string", "minLength": 2, "maxLength": 60 },
+        "waktu": { "type": "string", "minLength": 2, "maxLength": 60 },
+        "lokasi": { "type": "string", "minLength": 2, "maxLength": 180 },
+        "kategori": { "type": "string", "minLength": 2, "maxLength": 80 },
+        "status": { "type": "string", "enum": ["Selesai", "Sedang Berlangsung", "Akan Datang"] },
+        "imageUrl": { "type": "string", "minLength": 0, "maxLength": 600 },
+        "ringkasan": { "type": "string", "minLength": 5, "maxLength": 1000 },
+        "isiBeritaLengkap": { "type": "string", "minLength": 0, "maxLength": 10000 },
+        "contentMode": { "type": "string", "enum": ["standard", "html"], "maxLength": 20 },
+        "customHtml": { "type": "string", "minLength": 0, "maxLength": 50000 },
+        "narasumber": { "type": "string", "minLength": 2, "maxLength": 160 },
+        "pesertaCount": { "type": "integer" },
+        "hasilKegiatan": { "type": "array" },
+        "isDeleted": { "type": "boolean" },
+        "authorUid": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "updatedBy": { "type": "string", "minLength": 2, "maxLength": 120 },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": [
+        "id", "desaName", "kecamatanName", "title", "hari", "tanggal", "waktu", "lokasi",
+        "kategori", "status", "imageUrl", "ringkasan", "isiBeritaLengkap", "narasumber",
+        "pesertaCount", "hasilKegiatan", "isDeleted", "authorUid", "updatedBy", "createdAt", "updatedAt"
+      ]
+    }
+  },
+  "firestore": {
+    "/admins/{uid}": {
+      "schema": { "$ref": "#/entities/AdminUser" },
+      "description": "Authorized admin accounts verified via Firebase Auth."
+    },
+    "/cmsSettings/{settingId}": {
+      "schema": { "$ref": "#/entities/CmsIntegrationConfig" },
+      "description": "Admin-managed optional Cloudinary media upload config (no secrets)."
+    },
+    "/cmsVillages/{villageId}": {
+      "schema": { "$ref": "#/entities/CmsVillage" },
+      "description": "Publicly readable, admin-managed villages and kelurahan across Kabupaten Buleleng."
+    },
+    "/villageAgendas/{agendaId}": {
+      "schema": { "$ref": "#/entities/VillageAgenda" },
+      "description": "Publicly readable, admin-managed ECCD village agendas."
+    },
+    "/deletedSeedAgendas/{agendaId}": {
+      "schema": { "$ref": "#/entities/DeletedSeedAgenda" },
+      "description": "Admin-managed tombstones for deleted seed village agendas."
+    },
+    "/fosterFamilies/{familyId}": {
+      "schema": { "$ref": "#/entities/FosterFamily" },
+      "description": "Publicly readable (initials-only), admin-managed Desa Harmony foster families and WHO stunting growth curves."
+    },
+    "/cmsArticles/{articleId}": {
+      "schema": { "$ref": "#/entities/CmsArticle" },
+      "description": "Publicly readable, admin-managed educational articles with media URLs and reference links."
+    },
+    "/cmsVideos/{videoId}": {
+      "schema": { "$ref": "#/entities/CmsVideo" },
+      "description": "Publicly readable, admin-managed educational videos with media URLs."
+    },
+    "/cmsInfographics/{infographicId}": {
+      "schema": { "$ref": "#/entities/CmsInfographic" },
+      "description": "Publicly readable, admin-managed photo galleries and infographics."
+    },
+    "/cmsFaqs/{faqId}": {
+      "schema": { "$ref": "#/entities/CmsFaq" },
+      "description": "Publicly readable, admin-managed QnA FAQ entries (user QnA inquiries are never persisted)."
+    },
+    "/cmsPosyandu/{posyanduId}": {
+      "schema": { "$ref": "#/entities/CmsPosyandu" },
+      "description": "Publicly readable, admin-managed Desa Harmony Posyandu units and schedules."
+    },
+    "/cmsYouthArticles/{articleId}": {
+      "schema": { "$ref": "#/entities/CmsYouthArticle" },
+      "description": "Publicly readable, admin-managed Forum Remaja Desa Harmony blog articles."
+    },
+    "/cmsPamphlets/{pamphletId}": {
+      "schema": { "$ref": "#/entities/CmsPamphlet" },
+      "description": "Publicly readable, admin-managed Catin educational pamphlets."
+    },
+    "/cmsDiseases/{diseaseId}": {
+      "schema": { "$ref": "#/entities/CmsDisease" },
+      "description": "Publicly readable, admin-managed IMS sexual health disease prevention catalog."
+    },
+    "/cmsPosyanduArticles/{articleId}": {
+      "schema": { "$ref": "#/entities/CmsPosyanduArticle" },
+      "description": "Publicly readable, admin-managed Posyandu documentation articles supporting standard and custom Blogger HTML layouts."
+    }
+  }
+}

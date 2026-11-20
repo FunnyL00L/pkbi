@@ -63,7 +63,7 @@ export const LamanKecamatanDetail: React.FC<LamanKecamatanDetailProps> = ({
   };
 
   const waNakesHref = buildWhatsAppUrl(
-    `Om Swastiastu Tim PKBI Buleleng. Saya warga dari ${kecamatan.name} dan ingin berkonsultasi mengenai layanan kesehatan PKBI di wilayah kami.`
+    `Salam sehat, saya izin bertanya mengenai layanan kesehatan PKBI Buleleng di wilayah ${kecamatan.name}.`
   );
 
   const desaList =

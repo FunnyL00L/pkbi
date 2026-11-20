@@ -6,6 +6,8 @@ import {
   UserUploadedFile,
   PendaftaranCatinSubmission,
   PendaftaranKeluargaAsuhSubmission,
+  CatinNarasiSubmission,
+  QnaSubmissionItem,
 } from '../types';
 import {
   KECAMATAN_LIST,
@@ -16,6 +18,7 @@ import {
   VIDEO_EDUKASI_LIST,
   INITIAL_CHAT_MESSAGES,
 } from './bulelengData';
+import { ECCD_VILLAGE_MARKERS } from './eccdData';
 
 /**
  * =========================================================================
@@ -138,7 +141,7 @@ export const MASTER_CHAT_PROTOKOL: Record<string, ChatProtokol> = {
     avatarIcon: '👨‍⚕️',
     badgeKerahasiaan: 'Rahasia Medis Terjamin 100%',
     pesanPembuka:
-      'Om Swastiastu. Saya dr. Edy Sukarma dari PKBI Buleleng. Silakan sampaikan pertanyaan Anda seputar kesehatan reproduksi atau skrining pranikah.',
+      'Salam sehat. Saya dr. Edy Sukarma dari PKBI Buleleng. Silakan sampaikan pertanyaan Anda seputar kesehatan reproduksi atau skrining pranikah.',
     topikCepat: [
       'Apakah tes HIV & IMS di Puskesmas Buleleng dijamin rahasia?',
       'Berapa bulan sebelum menikah cek darah pranikah harus dilakukan?',
@@ -159,7 +162,7 @@ export const MASTER_CHAT_PROTOKOL: Record<string, ChatProtokol> = {
     avatarIcon: '👨‍⚕️',
     badgeKerahasiaan: 'Rahasia Medis Terjamin 100%',
     pesanPembuka:
-      'Om Swastiastu. Saya dr. Wayan Arya Putra, Sp.OG dari PKBI Buleleng. Silakan sampaikan pertanyaan seputar infeksi menular seksual (IMS), pemeriksaan pranikah calon pengantin, atau kesehatan reproduksi. Privasi Anda terjaga sepenuhnya.',
+      'Salam sehat. Saya dr. Wayan Arya Putra, Sp.OG dari PKBI Buleleng. Silakan sampaikan pertanyaan seputar infeksi menular seksual (IMS), pemeriksaan pranikah calon pengantin, atau kesehatan reproduksi. Privasi Anda terjaga sepenuhnya.',
     topikCepat: [
       'Apakah tes HIV & IMS di Puskesmas Buleleng dijamin rahasia?',
       'Berapa bulan sebelum menikah cek darah pranikah harus dilakukan?',
@@ -470,18 +473,22 @@ export const INITIAL_UPLOADED_FILES: UserUploadedFile[] = [
   },
 ];
 
-// MASTER DATABASE INSTANCE
+export const INITIAL_CATIN_NARASI_LIST: CatinNarasiSubmission[] = [];
+
+export const INITIAL_QNA_SUBMISSIONS: QnaSubmissionItem[] = [];
+
 export const MASTER_DATABASE_DEFAULT: AppDatabaseSchema = {
-  version: '1.2.0',
+  version: '2.0.0',
   lastUpdated: new Date().toISOString(),
 
-  // Bagian 1: Wilayah & Profil Desa
+  // Bagian 1: Wilayah, Peta ECCD 27 Desa & Profil Desa Harmony
   kecamatanList: KECAMATAN_LIST,
+  eccdVillages: ECCD_VILLAGE_MARKERS,
   desaSariMekarProfile: DESA_SARI_MEKAR_PROFILE,
   stuntingMonthlyData: STUNTING_BULAN_DATA,
   beritaKegiatanList: DOKUMENTASI_KEGIATAN_LIST,
 
-  // Bagian 2: Edukasi Medis & IMS
+  // Bagian 2: Edukasi Medis & Kespro General
   edukasiPenyakitList: EDUKASI_PENYAKIT_SEKSUAL,
   videoEdukasiList: VIDEO_EDUKASI_LIST,
 
@@ -495,8 +502,10 @@ export const MASTER_DATABASE_DEFAULT: AppDatabaseSchema = {
   // Bagian 6: Chat Room Q&A Terbuka & Anonim
   qaChatRooms: INITIAL_CHAT_MESSAGES,
 
-  // Bagian 7: Formulir Pendaftaran
+  // Bagian 7: Formulir Pendaftaran, Narasi Catin & QnA Terkategori
   pendaftaranCatinList: INITIAL_PENDAFTARAN_CATIN,
+  catinNarasiList: INITIAL_CATIN_NARASI_LIST,
+  qnaSubmissionList: INITIAL_QNA_SUBMISSIONS,
   pendaftaranKeluargaAsuhList: INITIAL_PENDAFTARAN_KELUARGA_ASUH,
 
   // Bagian 8: Berkas / File Lampiran Pengguna

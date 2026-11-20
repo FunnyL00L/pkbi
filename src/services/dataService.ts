@@ -14,6 +14,10 @@ import {
   VideoEdukasi,
   NakesProfile,
   ChatProtokol,
+  EccdVillageMarker,
+  CatinNarasiSubmission,
+  QnaSubmissionItem,
+  QnaCategoryId,
 } from '../types';
 import { MASTER_DATABASE_DEFAULT } from '../data/masterDatabase';
 
@@ -48,12 +52,21 @@ let currentDatabase: AppDatabaseSchema = (() => {
       return {
         ...MASTER_DATABASE_DEFAULT,
         ...parsed,
+        eccdVillages: MASTER_DATABASE_DEFAULT.eccdVillages,
         nakesList: MASTER_DATABASE_DEFAULT.nakesList,
         chat_protokol: {
           ...MASTER_DATABASE_DEFAULT.chat_protokol,
           ...(parsed.chat_protokol || {}),
         },
         tanyaNakesChats: [], // Percakapan nakes dikosongkan sesuai permintaan pengguna
+        qnaSubmissionList: [], // Pertanyaan QnA tidak pernah disimpan demi kerahasiaan
+        catinNarasiList: Array.isArray(parsed.catinNarasiList)
+          ? parsed.catinNarasiList.filter(
+              (item: { id?: string; nomorRegistrasi?: string }) =>
+                item?.id !== 'catin-narasi-sample-1' &&
+                item?.nomorRegistrasi !== 'CATIN-ECCD-2025-101'
+            )
+          : [],
         qaChatRooms: {
           ...MASTER_DATABASE_DEFAULT.qaChatRooms,
           ...(parsed.qaChatRooms || {}),
@@ -63,7 +76,7 @@ let currentDatabase: AppDatabaseSchema = (() => {
   } catch (err) {
     console.error('Error loading master database from storage, using defaults:', err);
   }
-  return { ...MASTER_DATABASE_DEFAULT, tanyaNakesChats: [] };
+  return { ...MASTER_DATABASE_DEFAULT, tanyaNakesChats: [], qnaSubmissionList: [] };
 })();
 
 // Subscribers for reactive updates across components
@@ -162,7 +175,7 @@ export const getChatProtokol = (targetId: string): ChatProtokol | undefined => {
       roleNakes: nakes.jabatan,
       avatarIcon: nakes.avatarIcon || '👨‍⚕️',
       badgeKerahasiaan: 'Rahasia Medis Terjamin 100%',
-      pesanPembuka: `Om Swastiastu. Saya ${nakes.nama} dari ${nakes.jabatan}. Silakan sampaikan pertanyaan Anda.`,
+      pesanPembuka: `Salam sehat. Saya ${nakes.nama} dari ${nakes.jabatan}. Silakan sampaikan pertanyaan Anda.`,
       topikCepat: [
         'Apakah tes HIV & IMS di Puskesmas Buleleng dijamin rahasia?',
         'Berapa bulan sebelum menikah cek darah pranikah harus dilakukan?',
@@ -474,4 +487,59 @@ export const getEdukasiPenyakitList = (): PenyakitSeksualEdu[] => {
 
 export const getVideoEdukasiList = (): VideoEdukasi[] => {
   return currentDatabase.videoEdukasiList || [];
+};
+
+// ==========================================
+// 8. PROJECT ECCD DATA, CATIN NARASI & QnA TERKATEGORI
+// ==========================================
+export const getEccdVillages = (): EccdVillageMarker[] => {
+  return currentDatabase.eccdVillages || MASTER_DATABASE_DEFAULT.eccdVillages;
+};
+
+export const getCatinNarasiList = (): CatinNarasiSubmission[] => {
+  return currentDatabase.catinNarasiList || [];
+};
+
+export const submitCatinNarasi = (
+  submission: Omit<CatinNarasiSubmission, 'id' | 'nomorRegistrasi' | 'tanggalSubmit'>
+): CatinNarasiSubmission => {
+  const created: CatinNarasiSubmission = {
+    id: `catin-narasi-${Date.now()}`,
+    nomorRegistrasi: `CATIN-ECCD-${new Date().getFullYear()}-${Math.floor(100 + Math.random() * 900)}`,
+    ...submission,
+    tanggalSubmit: new Date().toLocaleDateString('id-ID', {
+      day: '2-digit',
+      month: 'long',
+      year: 'numeric',
+    }),
+  };
+  currentDatabase.catinNarasiList = [created, ...(currentDatabase.catinNarasiList || [])];
+  persistAndNotify();
+  return created;
+};
+
+export const getQnaSubmissionList = (): QnaSubmissionItem[] => {
+  // Pertanyaan QnA tidak disimpan demi privasi penuh pengguna
+  return [];
+};
+
+export const submitQnaQuestion = (input: {
+  categoryId: QnaCategoryId;
+  alias?: string;
+  question: string;
+}): QnaSubmissionItem => {
+  // Hanya menghasilkan tiket sementara di memori untuk langsung diteruskan ke WhatsApp (TIDAK disimpan)
+  return {
+    id: `qna-${Date.now()}`,
+    ticketCode: `QNA-${Math.floor(1000 + Math.random() * 9000)}`,
+    categoryId: input.categoryId,
+    alias: input.alias?.trim() || 'Tamu Anonim (Rahasia)',
+    question: input.question.trim(),
+    submittedAt: `${new Date().toLocaleDateString('id-ID', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric',
+    })}, ${new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })} WITA`,
+    status: 'Diterima Konselor',
+  };
 };

@@ -1,0 +1,908 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // 1. Global Default-Deny Safety Net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // =========================================================================
+    // GLOBAL HARDENED PRIMITIVES
+    // =========================================================================
+    function isValidId(id) {
+      return id is string && id.size() >= 1 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isVerifiedUser() {
+      return isSignedIn() && request.auth.token.email_verified == true;
+    }
+
+    function isBootstrappedAdmin() {
+      return isVerifiedUser() &&
+        request.auth.token.email is string &&
+        request.auth.token.email == 'gedebramanda155@gmail.com';
+    }
+
+    function isAdmin() {
+      return isBootstrappedAdmin() || (
+        isVerifiedUser() &&
+        exists(/databases/$(database)/documents/admins/$(request.auth.uid)) &&
+        get(/databases/$(database)/documents/admins/$(request.auth.uid)).data.role == 'admin'
+      );
+    }
+
+    // =========================================================================
+    // VALIDATION BLUEPRINTS (ANTI-UPDATE-GAP)
+    // =========================================================================
+    function isValidAdminUser(data, uid) {
+      return data.keys().hasAll(['uid', 'email', 'displayName', 'role', 'createdAt']) &&
+        data.keys().hasOnly(['uid', 'email', 'displayName', 'role', 'createdAt']) &&
+        isValidId(data.uid) &&
+        data.uid == uid &&
+        data.email is string && data.email.size() >= 5 && data.email.size() <= 160 &&
+        data.displayName is string && data.displayName.size() >= 1 && data.displayName.size() <= 120 &&
+        data.role == 'admin' &&
+        data.createdAt is timestamp;
+    }
+
+    function isValidIntegrationConfig(data, settingId) {
+      return data.keys().hasAll([
+          'id', 'gasWebAppUrl', 'cloudinaryCloudName', 'cloudinaryUploadPreset',
+          'cloudinaryFolder', 'autoSyncGas', 'authorUid', 'updatedBy', 'createdAt', 'updatedAt'
+        ]) &&
+        data.keys().hasOnly([
+          'id', 'gasWebAppUrl', 'cloudinaryCloudName', 'cloudinaryUploadPreset',
+          'cloudinaryFolder', 'autoSyncGas', 'authorUid', 'updatedBy', 'createdAt', 'updatedAt'
+        ]) &&
+        isValidId(data.id) &&
+        data.id == settingId &&
+        data.id.size() <= 64 &&
+        data.gasWebAppUrl is string && data.gasWebAppUrl.size() <= 500 &&
+        data.cloudinaryCloudName is string && data.cloudinaryCloudName.size() <= 120 &&
+        data.cloudinaryUploadPreset is string && data.cloudinaryUploadPreset.size() <= 120 &&
+        data.cloudinaryFolder is string && data.cloudinaryFolder.size() <= 120 &&
+        data.autoSyncGas is bool &&
+        isValidId(data.authorUid) &&
+        data.updatedBy is string && data.updatedBy.size() >= 2 && data.updatedBy.size() <= 120 &&
+        data.createdAt is timestamp &&
+        data.updatedAt is timestamp;
+    }
+
+    function isValidCmsVillage(data, villageId) {
+      return data.keys().hasAll([
+          'id', 'name', 'kecamatanId', 'kecamatanName', 'lat', 'lng',
+          'population', 'posyanduCount', 'stuntingPct', 'statusProgram', 'deskripsi',
+          'totalRecipients', 'lakiLaki', 'perempuan', 'isDeleted',
+          'authorUid', 'updatedBy', 'createdAt', 'updatedAt'
+        ]) &&
+        data.keys().hasOnly([
+          'id', 'name', 'kecamatanId', 'kecamatanName', 'lat', 'lng',
+          'population', 'posyanduCount', 'stuntingPct', 'statusProgram', 'deskripsi',
+          'totalRecipients', 'lakiLaki', 'perempuan', 'imageUrl', 'isDeleted',
+          'authorUid', 'updatedBy', 'createdAt', 'updatedAt'
+        ]) &&
+        isValidId(data.id) &&
+        data.id == villageId &&
+        data.name is string && data.name.size() >= 2 && data.name.size() <= 140 &&
+        isValidId(data.kecamatanId) && data.kecamatanId.size() <= 64 &&
+        data.kecamatanName is string && data.kecamatanName.size() >= 2 && data.kecamatanName.size() <= 120 &&
+        data.lat is number && data.lat >= -9.0 && data.lat <= -7.5 &&
+        data.lng is number && data.lng >= 114.2 && data.lng <= 116.0 &&
+        data.population is int && data.population >= 0 && data.population <= 500000 &&
+        data.posyanduCount is int && data.posyanduCount >= 0 && data.posyanduCount <= 200 &&
+        data.stuntingPct is number && data.stuntingPct >= 0 && data.stuntingPct <= 100 &&
+        data.statusProgram in ['Aktif ECCD Mobile', 'Desa Binaan Utama', 'Siaga Layanan'] &&
+        data.deskripsi is string && data.deskripsi.size() >= 3 && data.deskripsi.size() <= 1200 &&
+        data.totalRecipients is int && data.totalRecipients >= 0 && data.totalRecipients <= 200000 &&
+        data.lakiLaki is int && data.lakiLaki >= 0 && data.lakiLaki <= 200000 &&
+        data.perempuan is int && data.perempuan >= 0 && data.perempuan <= 200000 &&
+        (!('imageUrl' in data) || (data.imageUrl is string && data.imageUrl.size() <= 600)) &&
+        data.isDeleted is bool &&
+        isValidId(data.authorUid) &&
+        data.updatedBy is string && data.updatedBy.size() >= 2 && data.updatedBy.size() <= 120 &&
+        data.createdAt is timestamp &&
+        data.updatedAt is timestamp;
+    }
+
+    function isValidVillageAgenda(data, agendaId) {
+      return data.keys().hasAll([
+          'id', 'villageId', 'kecamatanId', 'title', 'category',
+          'date', 'displayDate', 'time', 'status', 'location',
+          'facilitator', 'participants', 'summary', 'galleryImages',
+          'authorUid', 'updatedBy', 'createdAt', 'updatedAt'
+        ]) &&
+        data.keys().hasOnly([
+          'id', 'villageId', 'kecamatanId', 'title', 'category',
+          'date', 'displayDate', 'time', 'status', 'location',
+          'facilitator', 'participants', 'summary', 'galleryImages',
+          'authorUid', 'updatedBy', 'createdAt', 'updatedAt'
+        ]) &&
+        isValidId(data.id) &&
+        data.id == agendaId &&
+        isValidId(data.villageId) &&
+        isValidId(data.kecamatanId) &&
+        data.kecamatanId.size() <= 64 &&
+        data.title is string && data.title.size() >= 3 && data.title.size() <= 180 &&
+        data.category is string && data.category.size() >= 2 && data.category.size() <= 80 &&
+        data.date is string && data.date.size() >= 4 && data.date.size() <= 32 &&
+        data.displayDate is string && data.displayDate.size() >= 4 && data.displayDate.size() <= 80 &&
+        data.time is string && data.time.size() >= 3 && data.time.size() <= 60 &&
+        data.status in ['Terlaksana', 'Terjadwal'] &&
+        data.location is string && data.location.size() >= 3 && data.location.size() <= 160 &&
+        data.facilitator is string && data.facilitator.size() >= 3 && data.facilitator.size() <= 140 &&
+        data.participants is int && data.participants >= 0 && data.participants <= 100000 &&
+        data.summary is string && data.summary.size() >= 5 && data.summary.size() <= 1200 &&
+        data.galleryImages is list && data.galleryImages.size() <= 5 &&
+        (data.galleryImages.size() == 0 || (data.galleryImages[0] is string && data.galleryImages[0].size() <= 600)) &&
+        isValidId(data.authorUid) &&
+        data.updatedBy is string && data.updatedBy.size() >= 3 && data.updatedBy.size() <= 120 &&
+        data.createdAt is timestamp &&
+        data.updatedAt is timestamp;
+    }
+
+    function isValidDeletedSeedAgenda(data, agendaId) {
+      return data.keys().hasAll(['agendaId', 'villageId', 'authorUid', 'createdAt']) &&
+        data.keys().hasOnly(['agendaId', 'villageId', 'authorUid', 'createdAt']) &&
+        isValidId(data.agendaId) &&
+        data.agendaId == agendaId &&
+        isValidId(data.villageId) &&
+        isValidId(data.authorUid) &&
+        data.authorUid == request.auth.uid &&
+        data.createdAt is timestamp;
+    }
+
+    function isValidFosterFamily(data, familyId) {
+      return data.keys().hasAll([
+          'id', 'codeName', 'guardianOrMotherName', 'banjar', 'category',
+          'categoryLabel', 'targetName', 'baselineMetric', 'currentMetric',
+          'progressPct', 'mentorName', 'recordedBy', 'interventions',
+          'statusLabel', 'isDeleted', 'authorUid', 'createdAt', 'updatedAt'
+        ]) &&
+        data.keys().hasOnly([
+          'id', 'codeName', 'guardianOrMotherName', 'banjar', 'category',
+          'categoryLabel', 'targetName', 'childAgeMonths', 'childSex', 'baselineMetric', 'currentMetric',
+          'progressPct', 'mentorName', 'recordedBy', 'interventions', 'monthlyGrowth',
+          'statusLabel', 'isDeleted', 'authorUid', 'createdAt', 'updatedAt'
+        ]) &&
+        isValidId(data.id) &&
+        data.id == familyId &&
+        data.codeName is string && data.codeName.size() >= 2 && data.codeName.size() <= 60 &&
+        data.guardianOrMotherName is string && data.guardianOrMotherName.size() >= 2 && data.guardianOrMotherName.size() <= 80 &&
+        data.banjar is string && data.banjar.size() >= 2 && data.banjar.size() <= 80 &&
+        data.category in ['stunting', 'ibu-hamil-kek'] &&
+        data.categoryLabel is string && data.categoryLabel.size() >= 2 && data.categoryLabel.size() <= 80 &&
+        data.targetName is string && data.targetName.size() >= 2 && data.targetName.size() <= 100 &&
+        (!('childAgeMonths' in data) || (data.childAgeMonths is int && data.childAgeMonths >= 1 && data.childAgeMonths <= 72)) &&
+        (!('childSex' in data) || (data.childSex in ['L', 'P'])) &&
+        data.baselineMetric is string && data.baselineMetric.size() >= 2 && data.baselineMetric.size() <= 200 &&
+        data.currentMetric is string && data.currentMetric.size() >= 2 && data.currentMetric.size() <= 200 &&
+        data.progressPct is int && data.progressPct >= 0 && data.progressPct <= 100 &&
+        data.mentorName is string && data.mentorName.size() >= 2 && data.mentorName.size() <= 120 &&
+        data.recordedBy is string && data.recordedBy.size() >= 2 && data.recordedBy.size() <= 120 &&
+        data.interventions is list && data.interventions.size() <= 10 &&
+        (data.interventions.size() == 0 || (data.interventions[0] is string && data.interventions[0].size() <= 240)) &&
+        (!('monthlyGrowth' in data) || (
+          data.monthlyGrowth is list &&
+          data.monthlyGrowth.size() <= 60 &&
+          (data.monthlyGrowth.size() == 0 || data.monthlyGrowth[0] is map)
+        )) &&
+        data.statusLabel in ['Progres Baik', 'Pemulihan Intensif', 'Target Tercapai'] &&
+        data.isDeleted is bool &&
+        isValidId(data.authorUid) &&
+        data.createdAt is timestamp &&
+        data.updatedAt is timestamp;
+    }
+
+    function isValidCmsArticle(data, articleId) {
+      return data.keys().hasAll([
+          'id', 'title', 'category', 'readTime', 'author', 'dateText', 'imageUrl',
+          'summary', 'keyTakeaways', 'bodyParagraphs', 'checklist', 'isDeleted',
+          'authorUid', 'updatedBy', 'createdAt', 'updatedAt'
+        ]) &&
+        data.keys().hasOnly([
+          'id', 'title', 'category', 'readTime', 'author', 'dateText', 'imageUrl',
+          'sourceLink', 'summary', 'keyTakeaways', 'bodyParagraphs', 'contentMode',
+          'customHtml', 'checklist', 'isDeleted',
+          'authorUid', 'updatedBy', 'createdAt', 'updatedAt'
+        ]) &&
+        isValidId(data.id) &&
+        data.id == articleId &&
+        data.title is string && data.title.size() >= 3 && data.title.size() <= 200 &&
+        data.category is string && data.category.size() >= 2 && data.category.size() <= 80 &&
+        data.readTime is string && data.readTime.size() >= 2 && data.readTime.size() <= 40 &&
+        data.author is string && data.author.size() >= 2 && data.author.size() <= 120 &&
+        data.dateText is string && data.dateText.size() >= 2 && data.dateText.size() <= 60 &&
+        data.imageUrl is string && data.imageUrl.size() <= 600 &&
+        (!('sourceLink' in data) || (data.sourceLink is string && data.sourceLink.size() <= 600)) &&
+        data.summary is string && data.summary.size() >= 5 && data.summary.size() <= 1000 &&
+        data.keyTakeaways is list && data.keyTakeaways.size() <= 12 &&
+        (data.keyTakeaways.size() == 0 || (data.keyTakeaways[0] is string && data.keyTakeaways[0].size() <= 300)) &&
+        data.bodyParagraphs is list && data.bodyParagraphs.size() <= 20 &&
+        (data.bodyParagraphs.size() == 0 || (data.bodyParagraphs[0] is string && data.bodyParagraphs[0].size() <= 2000)) &&
+        (!('contentMode' in data) || (data.contentMode is string && data.contentMode in ['standard', 'html'])) &&
+        (!('customHtml' in data) || (data.customHtml is string && data.customHtml.size() <= 50000)) &&
+        data.checklist is list && data.checklist.size() <= 12 &&
+        (data.checklist.size() == 0 || (data.checklist[0] is string && data.checklist[0].size() <= 300)) &&
+        data.isDeleted is bool &&
+        isValidId(data.authorUid) &&
+        data.updatedBy is string && data.updatedBy.size() >= 2 && data.updatedBy.size() <= 120 &&
+        data.createdAt is timestamp &&
+        data.updatedAt is timestamp;
+    }
+
+    function isValidCmsVideo(data, videoId) {
+      return data.keys().hasAll([
+          'id', 'title', 'kategori', 'durasi', 'narasumber', 'deskripsi', 'imageUrl',
+          'ringkasanPoin', 'isDeleted', 'authorUid', 'updatedBy', 'createdAt', 'updatedAt'
+        ]) &&
+        data.keys().hasOnly([
+          'id', 'title', 'kategori', 'durasi', 'narasumber', 'deskripsi', 'imageUrl',
+          'videoUrl', 'ringkasanPoin', 'isDeleted', 'authorUid', 'updatedBy', 'createdAt', 'updatedAt'
+        ]) &&
+        isValidId(data.id) &&
+        data.id == videoId &&
+        data.title is string && data.title.size() >= 3 && data.title.size() <= 200 &&
+        data.kategori is string && data.kategori.size() >= 2 && data.kategori.size() <= 80 &&
+        data.durasi is string && data.durasi.size() >= 2 && data.durasi.size() <= 40 &&
+        data.narasumber is string && data.narasumber.size() >= 2 && data.narasumber.size() <= 140 &&
+        data.deskripsi is string && data.deskripsi.size() >= 5 && data.deskripsi.size() <= 1200 &&
+        data.imageUrl is string && data.imageUrl.size() <= 600 &&
+        (!('videoUrl' in data) || (data.videoUrl is string && data.videoUrl.size() <= 600)) &&
+        data.ringkasanPoin is list && data.ringkasanPoin.size() <= 12 &&
+        (data.ringkasanPoin.size() == 0 || (data.ringkasanPoin[0] is string && data.ringkasanPoin[0].size() <= 300)) &&
+        data.isDeleted is bool &&
+        isValidId(data.authorUid) &&
+        data.updatedBy is string && data.updatedBy.size() >= 2 && data.updatedBy.size() <= 120 &&
+        data.createdAt is timestamp &&
+        data.updatedAt is timestamp;
+    }
+
+    function isValidCmsInfographic(data, infographicId) {
+      return data.keys().hasAll([
+          'id', 'title', 'category', 'caption', 'imageUrl', 'highlights',
+          'isDeleted', 'authorUid', 'updatedBy', 'createdAt', 'updatedAt'
+        ]) &&
+        data.keys().hasOnly([
+          'id', 'title', 'category', 'caption', 'imageUrl', 'linkUrl', 'highlights',
+          'isDeleted', 'authorUid', 'updatedBy', 'createdAt', 'updatedAt'
+        ]) &&
+        isValidId(data.id) &&
+        data.id == infographicId &&
+        data.title is string && data.title.size() >= 3 && data.title.size() <= 180 &&
+        data.category is string && data.category.size() >= 2 && data.category.size() <= 80 &&
+        data.caption is string && data.caption.size() >= 3 && data.caption.size() <= 1000 &&
+        data.imageUrl is string && data.imageUrl.size() <= 600 &&
+        (!('linkUrl' in data) || (data.linkUrl is string && data.linkUrl.size() <= 600)) &&
+        data.highlights is list && data.highlights.size() <= 12 &&
+        (data.highlights.size() == 0 || (data.highlights[0] is string && data.highlights[0].size() <= 300)) &&
+        data.isDeleted is bool &&
+        isValidId(data.authorUid) &&
+        data.updatedBy is string && data.updatedBy.size() >= 2 && data.updatedBy.size() <= 120 &&
+        data.createdAt is timestamp &&
+        data.updatedAt is timestamp;
+    }
+
+    function isValidCmsFaq(data, faqId) {
+      return data.keys().hasAll([
+          'id', 'categoryId', 'question', 'answer', 'answeredBy',
+          'isDeleted', 'authorUid', 'updatedBy', 'createdAt', 'updatedAt'
+        ]) &&
+        data.keys().hasOnly([
+          'id', 'categoryId', 'question', 'answer', 'answeredBy',
+          'isDeleted', 'authorUid', 'updatedBy', 'createdAt', 'updatedAt'
+        ]) &&
+        isValidId(data.id) &&
+        data.id == faqId &&
+        data.categoryId in ['kesehatan-reproduksi', 'kesehatan-mental', 'layanan-catin', 'pertanyaan-lainnya'] &&
+        data.question is string && data.question.size() >= 5 && data.question.size() <= 300 &&
+        data.answer is string && data.answer.size() >= 5 && data.answer.size() <= 1600 &&
+        data.answeredBy is string && data.answeredBy.size() >= 2 && data.answeredBy.size() <= 140 &&
+        data.isDeleted is bool &&
+        isValidId(data.authorUid) &&
+        data.updatedBy is string && data.updatedBy.size() >= 2 && data.updatedBy.size() <= 120 &&
+        data.createdAt is timestamp &&
+        data.updatedAt is timestamp;
+    }
+
+    function isValidCmsPosyandu(data, posyanduId) {
+      return data.keys().hasAll([
+          'id', 'posyanduName', 'banjar', 'schedule', 'nextSession', 'leadMidwife',
+          'balitaCount', 'bumilCount', 'description', 'imageUrl', 'highlights',
+          'isDeleted', 'authorUid', 'updatedBy', 'createdAt', 'updatedAt'
+        ]) &&
+        data.keys().hasOnly([
+          'id', 'posyanduName', 'banjar', 'schedule', 'nextSession', 'leadMidwife',
+          'balitaCount', 'bumilCount', 'description', 'imageUrl', 'highlights',
+          'isDeleted', 'authorUid', 'updatedBy', 'createdAt', 'updatedAt'
+        ]) &&
+        isValidId(data.id) &&
+        data.id == posyanduId &&
+        data.posyanduName is string && data.posyanduName.size() >= 2 && data.posyanduName.size() <= 140 &&
+        data.banjar is string && data.banjar.size() >= 2 && data.banjar.size() <= 120 &&
+        data.schedule is string && data.schedule.size() >= 2 && data.schedule.size() <= 140 &&
+        data.nextSession is string && data.nextSession.size() >= 2 && data.nextSession.size() <= 120 &&
+        data.leadMidwife is string && data.leadMidwife.size() >= 2 && data.leadMidwife.size() <= 140 &&
+        data.balitaCount is int && data.balitaCount >= 0 && data.balitaCount <= 50000 &&
+        data.bumilCount is int && data.bumilCount >= 0 && data.bumilCount <= 50000 &&
+        data.description is string && data.description.size() >= 3 && data.description.size() <= 1200 &&
+        data.imageUrl is string && data.imageUrl.size() <= 600 &&
+        data.highlights is list && data.highlights.size() <= 12 &&
+        (data.highlights.size() == 0 || (data.highlights[0] is string && data.highlights[0].size() <= 300)) &&
+        data.isDeleted is bool &&
+        isValidId(data.authorUid) &&
+        data.updatedBy is string && data.updatedBy.size() >= 2 && data.updatedBy.size() <= 120 &&
+        data.createdAt is timestamp &&
+        data.updatedAt is timestamp;
+    }
+
+    function isValidCmsYouthArticle(data, articleId) {
+      return data.keys().hasAll([
+          'id', 'programName', 'forumName', 'schedule', 'participantCount', 'facilitator',
+          'topicFocus', 'description', 'imageUrl', 'outputs', 'bodyParagraphs',
+          'isDeleted', 'authorUid', 'updatedBy', 'createdAt', 'updatedAt'
+        ]) &&
+        data.keys().hasOnly([
+          'id', 'programName', 'forumName', 'schedule', 'participantCount', 'facilitator',
+          'topicFocus', 'description', 'imageUrl', 'outputs', 'bodyParagraphs',
+          'contentMode', 'customHtml',
+          'dateText', 'readTime', 'isDeleted', 'authorUid', 'updatedBy', 'createdAt', 'updatedAt'
+        ]) &&
+        isValidId(data.id) &&
+        data.id == articleId &&
+        data.programName is string && data.programName.size() >= 3 && data.programName.size() <= 180 &&
+        data.forumName is string && data.forumName.size() >= 2 && data.forumName.size() <= 120 &&
+        data.schedule is string && data.schedule.size() >= 2 && data.schedule.size() <= 140 &&
+        data.participantCount is int && data.participantCount >= 0 && data.participantCount <= 50000 &&
+        data.facilitator is string && data.facilitator.size() >= 2 && data.facilitator.size() <= 140 &&
+        data.topicFocus is string && data.topicFocus.size() >= 2 && data.topicFocus.size() <= 160 &&
+        data.description is string && data.description.size() >= 5 && data.description.size() <= 1200 &&
+        data.imageUrl is string && data.imageUrl.size() <= 600 &&
+        data.outputs is list && data.outputs.size() <= 12 &&
+        (data.outputs.size() == 0 || (data.outputs[0] is string && data.outputs[0].size() <= 300)) &&
+        data.bodyParagraphs is list && data.bodyParagraphs.size() <= 20 &&
+        (data.bodyParagraphs.size() == 0 || (data.bodyParagraphs[0] is string && data.bodyParagraphs[0].size() <= 2000)) &&
+        (!('contentMode' in data) || (data.contentMode is string && data.contentMode in ['standard', 'html'])) &&
+        (!('customHtml' in data) || (data.customHtml is string && data.customHtml.size() <= 50000)) &&
+        (!('dateText' in data) || (data.dateText is string && data.dateText.size() <= 80)) &&
+        (!('readTime' in data) || (data.readTime is string && data.readTime.size() <= 40)) &&
+        data.isDeleted is bool &&
+        isValidId(data.authorUid) &&
+        data.updatedBy is string && data.updatedBy.size() >= 2 && data.updatedBy.size() <= 120 &&
+        data.createdAt is timestamp &&
+        data.updatedAt is timestamp;
+    }
+
+    function isValidCmsPamphlet(data, pamphletId) {
+      return data.keys().hasAll([
+          'id', 'title', 'subtitle', 'category', 'imageUrl', 'summary', 'keyPoints',
+          'recommendedAction', 'isDeleted', 'authorUid', 'updatedBy', 'createdAt', 'updatedAt'
+        ]) &&
+        data.keys().hasOnly([
+          'id', 'title', 'subtitle', 'category', 'imageUrl', 'summary', 'keyPoints',
+          'recommendedAction', 'isDeleted', 'authorUid', 'updatedBy', 'createdAt', 'updatedAt'
+        ]) &&
+        isValidId(data.id) &&
+        data.id == pamphletId &&
+        data.title is string && data.title.size() >= 3 && data.title.size() <= 180 &&
+        data.subtitle is string && data.subtitle.size() >= 2 && data.subtitle.size() <= 200 &&
+        data.category is string && data.category.size() >= 2 && data.category.size() <= 80 &&
+        data.imageUrl is string && data.imageUrl.size() <= 600 &&
+        data.summary is string && data.summary.size() >= 5 && data.summary.size() <= 1000 &&
+        data.keyPoints is list && data.keyPoints.size() <= 12 &&
+        (data.keyPoints.size() == 0 || (data.keyPoints[0] is string && data.keyPoints[0].size() <= 300)) &&
+        data.recommendedAction is string && data.recommendedAction.size() >= 3 && data.recommendedAction.size() <= 300 &&
+        data.isDeleted is bool &&
+        isValidId(data.authorUid) &&
+        data.updatedBy is string && data.updatedBy.size() >= 2 && data.updatedBy.size() <= 120 &&
+        data.createdAt is timestamp &&
+        data.updatedAt is timestamp;
+    }
+
+    function isValidCmsDisease(data, diseaseId) {
+      return data.keys().hasAll([
+          'id', 'namaPenyakit', 'singkatan', 'penyebab', 'kategori', 'tingkatBahaya',
+          'gejalaPria', 'gejalaWanita', 'caraPenularan', 'metodePencegahan',
+          'pengobatan', 'skriningPranikah', 'mitosFakta', 'isDeleted',
+          'authorUid', 'updatedBy', 'createdAt', 'updatedAt'
+        ]) &&
+        data.keys().hasOnly([
+          'id', 'namaPenyakit', 'singkatan', 'penyebab', 'kategori', 'tingkatBahaya',
+          'imageUrl', 'gejalaPria', 'gejalaWanita', 'caraPenularan', 'metodePencegahan',
+          'pengobatan', 'skriningPranikah', 'mitosFakta', 'isDeleted',
+          'authorUid', 'updatedBy', 'createdAt', 'updatedAt'
+        ]) &&
+        isValidId(data.id) &&
+        data.id == diseaseId &&
+        data.namaPenyakit is string && data.namaPenyakit.size() >= 2 && data.namaPenyakit.size() <= 160 &&
+        data.singkatan is string && data.singkatan.size() >= 1 && data.singkatan.size() <= 40 &&
+        data.penyebab is string && data.penyebab.size() >= 3 && data.penyebab.size() <= 600 &&
+        data.kategori is string && data.kategori.size() >= 2 && data.kategori.size() <= 100 &&
+        data.tingkatBahaya in ['Tinggi', 'Sangat Tinggi', 'Perlu Perhatian Khusus'] &&
+        (!('imageUrl' in data) || (data.imageUrl is string && data.imageUrl.size() <= 600)) &&
+        data.gejalaPria is list && data.gejalaPria.size() <= 12 &&
+        (data.gejalaPria.size() == 0 || (data.gejalaPria[0] is string && data.gejalaPria[0].size() <= 300)) &&
+        data.gejalaWanita is list && data.gejalaWanita.size() <= 12 &&
+        (data.gejalaWanita.size() == 0 || (data.gejalaWanita[0] is string && data.gejalaWanita[0].size() <= 300)) &&
+        data.caraPenularan is list && data.caraPenularan.size() <= 12 &&
+        (data.caraPenularan.size() == 0 || (data.caraPenularan[0] is string && data.caraPenularan[0].size() <= 300)) &&
+        data.metodePencegahan is list && data.metodePencegahan.size() <= 12 &&
+        (data.metodePencegahan.size() == 0 || (data.metodePencegahan[0] is string && data.metodePencegahan[0].size() <= 300)) &&
+        data.pengobatan is string && data.pengobatan.size() >= 3 && data.pengobatan.size() <= 1000 &&
+        data.skriningPranikah is string && data.skriningPranikah.size() >= 3 && data.skriningPranikah.size() <= 1000 &&
+        data.mitosFakta is list && data.mitosFakta.size() <= 10 &&
+        (data.mitosFakta.size() == 0 || data.mitosFakta[0] is map) &&
+        data.isDeleted is bool &&
+        isValidId(data.authorUid) &&
+        data.updatedBy is string && data.updatedBy.size() >= 2 && data.updatedBy.size() <= 120 &&
+        data.createdAt is timestamp &&
+        data.updatedAt is timestamp;
+    }
+
+    function isValidCmsPosyanduArticle(data, articleId) {
+      return data.keys().hasAll([
+          'id', 'desaName', 'kecamatanName', 'title', 'hari', 'tanggal', 'waktu', 'lokasi',
+          'kategori', 'status', 'imageUrl', 'ringkasan', 'isiBeritaLengkap', 'narasumber',
+          'pesertaCount', 'hasilKegiatan', 'isDeleted', 'authorUid', 'updatedBy', 'createdAt', 'updatedAt'
+        ]) &&
+        data.keys().hasOnly([
+          'id', 'desaName', 'kecamatanName', 'title', 'hari', 'tanggal', 'waktu', 'lokasi',
+          'kategori', 'status', 'imageUrl', 'ringkasan', 'isiBeritaLengkap',
+          'contentMode', 'customHtml', 'narasumber',
+          'pesertaCount', 'hasilKegiatan', 'isDeleted', 'authorUid', 'updatedBy', 'createdAt', 'updatedAt'
+        ]) &&
+        isValidId(data.id) &&
+        data.id == articleId &&
+        data.desaName is string && data.desaName.size() >= 2 && data.desaName.size() <= 120 &&
+        data.kecamatanName is string && data.kecamatanName.size() >= 2 && data.kecamatanName.size() <= 120 &&
+        data.title is string && data.title.size() >= 3 && data.title.size() <= 200 &&
+        data.hari is string && data.hari.size() >= 2 && data.hari.size() <= 40 &&
+        data.tanggal is string && data.tanggal.size() >= 2 && data.tanggal.size() <= 60 &&
+        data.waktu is string && data.waktu.size() >= 2 && data.waktu.size() <= 60 &&
+        data.lokasi is string && data.lokasi.size() >= 2 && data.lokasi.size() <= 180 &&
+        data.kategori is string && data.kategori.size() >= 2 && data.kategori.size() <= 80 &&
+        data.status in ['Selesai', 'Sedang Berlangsung', 'Akan Datang'] &&
+        data.imageUrl is string && data.imageUrl.size() <= 600 &&
+        data.ringkasan is string && data.ringkasan.size() >= 5 && data.ringkasan.size() <= 1000 &&
+        data.isiBeritaLengkap is string && data.isiBeritaLengkap.size() <= 10000 &&
+        (!('contentMode' in data) || (data.contentMode is string && data.contentMode in ['standard', 'html'])) &&
+        (!('customHtml' in data) || (data.customHtml is string && data.customHtml.size() <= 50000)) &&
+        data.narasumber is string && data.narasumber.size() >= 2 && data.narasumber.size() <= 160 &&
+        data.pesertaCount is int && data.pesertaCount >= 0 && data.pesertaCount <= 50000 &&
+        data.hasilKegiatan is list && data.hasilKegiatan.size() <= 12 &&
+        (data.hasilKegiatan.size() == 0 || (data.hasilKegiatan[0] is string && data.hasilKegiatan[0].size() <= 300)) &&
+        data.isDeleted is bool &&
+        isValidId(data.authorUid) &&
+        data.updatedBy is string && data.updatedBy.size() >= 2 && data.updatedBy.size() <= 120 &&
+        data.createdAt is timestamp &&
+        data.updatedAt is timestamp;
+    }
+
+    // =========================================================================
+    // COLLECTION 1: /admins/{uid} (PII Isolated — No List Enumeration)
+    // =========================================================================
+    match /admins/{uid} {
+      allow get: if isSignedIn() && isValidId(uid) && (request.auth.uid == uid || isAdmin());
+      allow list: if false;
+      allow create: if isVerifiedUser() &&
+        isValidId(uid) &&
+        isValidAdminUser(incoming(), uid) &&
+        incoming().createdAt == request.time &&
+        isAdmin();
+      allow update: if isVerifiedUser() &&
+        isValidId(uid) &&
+        isValidAdminUser(incoming(), uid) &&
+        incoming().uid == existing().uid &&
+        incoming().createdAt == existing().createdAt &&
+        incoming().diff(existing()).affectedKeys().hasOnly(['displayName', 'email']) &&
+        isAdmin();
+      allow delete: if isVerifiedUser() && isValidId(uid) && isAdmin();
+    }
+
+    // =========================================================================
+    // COLLECTION 2: /cmsSettings/{settingId} (Admin-only Integration Config)
+    // =========================================================================
+    match /cmsSettings/{settingId} {
+      allow get: if isVerifiedUser() && isValidId(settingId) && isAdmin();
+      allow list: if false;
+      allow create: if isVerifiedUser() &&
+        isValidId(settingId) &&
+        isValidIntegrationConfig(incoming(), settingId) &&
+        incoming().authorUid == request.auth.uid &&
+        incoming().createdAt == request.time &&
+        incoming().updatedAt == request.time &&
+        isAdmin();
+      allow update: if isVerifiedUser() &&
+        isValidId(settingId) &&
+        isValidIntegrationConfig(incoming(), settingId) &&
+        incoming().id == existing().id &&
+        incoming().authorUid == existing().authorUid &&
+        incoming().createdAt == existing().createdAt &&
+        incoming().updatedAt == request.time &&
+        incoming().diff(existing()).affectedKeys().hasOnly([
+          'gasWebAppUrl', 'cloudinaryCloudName', 'cloudinaryUploadPreset',
+          'cloudinaryFolder', 'autoSyncGas', 'updatedBy', 'updatedAt'
+        ]) &&
+        isAdmin();
+      allow delete: if isVerifiedUser() && isValidId(settingId) && isAdmin();
+    }
+
+    // =========================================================================
+    // COLLECTION 3: /cmsVillages/{villageId}
+    // Publicly readable Buleleng villages/kelurahan; Admin-only writes
+    // =========================================================================
+    match /cmsVillages/{villageId} {
+      allow get: if isValidId(villageId) && existing().id >= '';
+      allow list: if resource.data.id >= '';
+      allow create: if isVerifiedUser() &&
+        isValidId(villageId) &&
+        isValidCmsVillage(incoming(), villageId) &&
+        incoming().authorUid == request.auth.uid &&
+        incoming().createdAt == request.time &&
+        incoming().updatedAt == request.time &&
+        isAdmin();
+      allow update: if isVerifiedUser() &&
+        isValidId(villageId) &&
+        isValidCmsVillage(incoming(), villageId) &&
+        incoming().id == existing().id &&
+        incoming().authorUid == existing().authorUid &&
+        incoming().createdAt == existing().createdAt &&
+        incoming().updatedAt == request.time &&
+        incoming().diff(existing()).affectedKeys().hasOnly([
+          'name', 'kecamatanId', 'kecamatanName', 'lat', 'lng',
+          'population', 'posyanduCount', 'stuntingPct', 'statusProgram', 'deskripsi',
+          'totalRecipients', 'lakiLaki', 'perempuan', 'imageUrl', 'isDeleted',
+          'updatedBy', 'updatedAt'
+        ]) &&
+        isAdmin();
+      allow delete: if isVerifiedUser() && isValidId(villageId) && isAdmin();
+    }
+
+    // =========================================================================
+    // COLLECTION 4: /villageAgendas/{agendaId}
+    // =========================================================================
+    match /villageAgendas/{agendaId} {
+      allow get: if isValidId(agendaId) && existing().status in ['Terlaksana', 'Terjadwal'];
+      allow list: if resource.data.status in ['Terlaksana', 'Terjadwal'];
+      allow create: if isVerifiedUser() &&
+        isValidId(agendaId) &&
+        isValidVillageAgenda(incoming(), agendaId) &&
+        incoming().authorUid == request.auth.uid &&
+        incoming().createdAt == request.time &&
+        incoming().updatedAt == request.time &&
+        isAdmin();
+      allow update: if isVerifiedUser() &&
+        isValidId(agendaId) &&
+        isValidVillageAgenda(incoming(), agendaId) &&
+        incoming().id == existing().id &&
+        incoming().authorUid == existing().authorUid &&
+        incoming().createdAt == existing().createdAt &&
+        incoming().updatedAt == request.time &&
+        incoming().diff(existing()).affectedKeys().hasOnly([
+          'villageId', 'kecamatanId', 'title', 'category',
+          'date', 'displayDate', 'time', 'status', 'location',
+          'facilitator', 'participants', 'summary', 'galleryImages',
+          'updatedBy', 'updatedAt'
+        ]) &&
+        isAdmin();
+      allow delete: if isVerifiedUser() && isValidId(agendaId) && isAdmin();
+    }
+
+    // =========================================================================
+    // COLLECTION 5: /deletedSeedAgendas/{agendaId}
+    // =========================================================================
+    match /deletedSeedAgendas/{agendaId} {
+      allow get: if isValidId(agendaId) && existing().agendaId is string;
+      allow list: if resource.data.agendaId >= '';
+      allow create: if isVerifiedUser() &&
+        isValidId(agendaId) &&
+        isValidDeletedSeedAgenda(incoming(), agendaId) &&
+        incoming().createdAt == request.time &&
+        isAdmin();
+      allow update: if false;
+      allow delete: if isVerifiedUser() && isValidId(agendaId) && isAdmin();
+    }
+
+    // =========================================================================
+    // COLLECTION 6: /fosterFamilies/{familyId}
+    // =========================================================================
+    match /fosterFamilies/{familyId} {
+      allow get: if isValidId(familyId) && existing().category in ['stunting', 'ibu-hamil-kek'];
+      allow list: if resource.data.category in ['stunting', 'ibu-hamil-kek'];
+      allow create: if isVerifiedUser() &&
+        isValidId(familyId) &&
+        isValidFosterFamily(incoming(), familyId) &&
+        incoming().authorUid == request.auth.uid &&
+        incoming().createdAt == request.time &&
+        incoming().updatedAt == request.time &&
+        isAdmin();
+      allow update: if isVerifiedUser() &&
+        isValidId(familyId) &&
+        isValidFosterFamily(incoming(), familyId) &&
+        incoming().id == existing().id &&
+        incoming().authorUid == existing().authorUid &&
+        incoming().createdAt == existing().createdAt &&
+        incoming().updatedAt == request.time &&
+        incoming().diff(existing()).affectedKeys().hasOnly([
+          'codeName', 'guardianOrMotherName', 'banjar', 'category',
+          'categoryLabel', 'targetName', 'childAgeMonths', 'childSex', 'baselineMetric',
+          'currentMetric', 'progressPct', 'mentorName', 'recordedBy',
+          'interventions', 'monthlyGrowth', 'statusLabel', 'isDeleted', 'updatedAt'
+        ]) &&
+        isAdmin();
+      allow delete: if isVerifiedUser() && isValidId(familyId) && isAdmin();
+    }
+
+    // =========================================================================
+    // COLLECTION 7: /cmsArticles/{articleId}
+    // =========================================================================
+    match /cmsArticles/{articleId} {
+      allow get: if isValidId(articleId) && existing().id >= '';
+      allow list: if resource.data.id >= '';
+      allow create: if isVerifiedUser() &&
+        isValidId(articleId) &&
+        isValidCmsArticle(incoming(), articleId) &&
+        incoming().authorUid == request.auth.uid &&
+        incoming().createdAt == request.time &&
+        incoming().updatedAt == request.time &&
+        isAdmin();
+      allow update: if isVerifiedUser() &&
+        isValidId(articleId) &&
+        isValidCmsArticle(incoming(), articleId) &&
+        incoming().id == existing().id &&
+        incoming().authorUid == existing().authorUid &&
+        incoming().createdAt == existing().createdAt &&
+        incoming().updatedAt == request.time &&
+        incoming().diff(existing()).affectedKeys().hasOnly([
+          'title', 'category', 'readTime', 'author', 'dateText', 'imageUrl',
+          'sourceLink', 'summary', 'keyTakeaways', 'bodyParagraphs', 'contentMode',
+          'customHtml', 'checklist',
+          'isDeleted', 'updatedBy', 'updatedAt'
+        ]) &&
+        isAdmin();
+      allow delete: if isVerifiedUser() && isValidId(articleId) && isAdmin();
+    }
+
+    // =========================================================================
+    // COLLECTION 8: /cmsVideos/{videoId}
+    // =========================================================================
+    match /cmsVideos/{videoId} {
+      allow get: if isValidId(videoId) && existing().id >= '';
+      allow list: if resource.data.id >= '';
+      allow create: if isVerifiedUser() &&
+        isValidId(videoId) &&
+        isValidCmsVideo(incoming(), videoId) &&
+        incoming().authorUid == request.auth.uid &&
+        incoming().createdAt == request.time &&
+        incoming().updatedAt == request.time &&
+        isAdmin();
+      allow update: if isVerifiedUser() &&
+        isValidId(videoId) &&
+        isValidCmsVideo(incoming(), videoId) &&
+        incoming().id == existing().id &&
+        incoming().authorUid == existing().authorUid &&
+        incoming().createdAt == existing().createdAt &&
+        incoming().updatedAt == request.time &&
+        incoming().diff(existing()).affectedKeys().hasOnly([
+          'title', 'kategori', 'durasi', 'narasumber', 'deskripsi', 'imageUrl',
+          'videoUrl', 'ringkasanPoin', 'isDeleted', 'updatedBy', 'updatedAt'
+        ]) &&
+        isAdmin();
+      allow delete: if isVerifiedUser() && isValidId(videoId) && isAdmin();
+    }
+
+    // =========================================================================
+    // COLLECTION 9: /cmsInfographics/{infographicId}
+    // =========================================================================
+    match /cmsInfographics/{infographicId} {
+      allow get: if isValidId(infographicId) && existing().id >= '';
+      allow list: if resource.data.id >= '';
+      allow create: if isVerifiedUser() &&
+        isValidId(infographicId) &&
+        isValidCmsInfographic(incoming(), infographicId) &&
+        incoming().authorUid == request.auth.uid &&
+        incoming().createdAt == request.time &&
+        incoming().updatedAt == request.time &&
+        isAdmin();
+      allow update: if isVerifiedUser() &&
+        isValidId(infographicId) &&
+        isValidCmsInfographic(incoming(), infographicId) &&
+        incoming().id == existing().id &&
+        incoming().authorUid == existing().authorUid &&
+        incoming().createdAt == existing().createdAt &&
+        incoming().updatedAt == request.time &&
+        incoming().diff(existing()).affectedKeys().hasOnly([
+          'title', 'category', 'caption', 'imageUrl', 'linkUrl',
+          'highlights', 'isDeleted', 'updatedBy', 'updatedAt'
+        ]) &&
+        isAdmin();
+      allow delete: if isVerifiedUser() && isValidId(infographicId) && isAdmin();
+    }
+
+    // =========================================================================
+    // COLLECTION 10: /cmsFaqs/{faqId}
+    // =========================================================================
+    match /cmsFaqs/{faqId} {
+      allow get: if isValidId(faqId) && existing().id >= '';
+      allow list: if resource.data.id >= '';
+      allow create: if isVerifiedUser() &&
+        isValidId(faqId) &&
+        isValidCmsFaq(incoming(), faqId) &&
+        incoming().authorUid == request.auth.uid &&
+        incoming().createdAt == request.time &&
+        incoming().updatedAt == request.time &&
+        isAdmin();
+      allow update: if isVerifiedUser() &&
+        isValidId(faqId) &&
+        isValidCmsFaq(incoming(), faqId) &&
+        incoming().id == existing().id &&
+        incoming().authorUid == existing().authorUid &&
+        incoming().createdAt == existing().createdAt &&
+        incoming().updatedAt == request.time &&
+        incoming().diff(existing()).affectedKeys().hasOnly([
+          'categoryId', 'question', 'answer', 'answeredBy',
+          'isDeleted', 'updatedBy', 'updatedAt'
+        ]) &&
+        isAdmin();
+      allow delete: if isVerifiedUser() && isValidId(faqId) && isAdmin();
+    }
+
+    // =========================================================================
+    // COLLECTION 11: /cmsPosyandu/{posyanduId}
+    // =========================================================================
+    match /cmsPosyandu/{posyanduId} {
+      allow get: if isValidId(posyanduId) && existing().id >= '';
+      allow list: if resource.data.id >= '';
+      allow create: if isVerifiedUser() &&
+        isValidId(posyanduId) &&
+        isValidCmsPosyandu(incoming(), posyanduId) &&
+        incoming().authorUid == request.auth.uid &&
+        incoming().createdAt == request.time &&
+        incoming().updatedAt == request.time &&
+        isAdmin();
+      allow update: if isVerifiedUser() &&
+        isValidId(posyanduId) &&
+        isValidCmsPosyandu(incoming(), posyanduId) &&
+        incoming().id == existing().id &&
+        incoming().authorUid == existing().authorUid &&
+        incoming().createdAt == existing().createdAt &&
+        incoming().updatedAt == request.time &&
+        incoming().diff(existing()).affectedKeys().hasOnly([
+          'posyanduName', 'banjar', 'schedule', 'nextSession', 'leadMidwife',
+          'balitaCount', 'bumilCount', 'description', 'imageUrl', 'highlights',
+          'isDeleted', 'updatedBy', 'updatedAt'
+        ]) &&
+        isAdmin();
+      allow delete: if isVerifiedUser() && isValidId(posyanduId) && isAdmin();
+    }
+
+    // =========================================================================
+    // COLLECTION 12: /cmsYouthArticles/{articleId}
+    // =========================================================================
+    match /cmsYouthArticles/{articleId} {
+      allow get: if isValidId(articleId) && existing().id >= '';
+      allow list: if resource.data.id >= '';
+      allow create: if isVerifiedUser() &&
+        isValidId(articleId) &&
+        isValidCmsYouthArticle(incoming(), articleId) &&
+        incoming().authorUid == request.auth.uid &&
+        incoming().createdAt == request.time &&
+        incoming().updatedAt == request.time &&
+        isAdmin();
+      allow update: if isVerifiedUser() &&
+        isValidId(articleId) &&
+        isValidCmsYouthArticle(incoming(), articleId) &&
+        incoming().id == existing().id &&
+        incoming().authorUid == existing().authorUid &&
+        incoming().createdAt == existing().createdAt &&
+        incoming().updatedAt == request.time &&
+        incoming().diff(existing()).affectedKeys().hasOnly([
+          'programName', 'forumName', 'schedule', 'participantCount', 'facilitator',
+          'topicFocus', 'description', 'imageUrl', 'outputs', 'bodyParagraphs',
+          'contentMode', 'customHtml',
+          'dateText', 'readTime', 'isDeleted', 'updatedBy', 'updatedAt'
+        ]) &&
+        isAdmin();
+      allow delete: if isVerifiedUser() && isValidId(articleId) && isAdmin();
+    }
+
+    // =========================================================================
+    // COLLECTION 13: /cmsPamphlets/{pamphletId}
+    // =========================================================================
+    match /cmsPamphlets/{pamphletId} {
+      allow get: if isValidId(pamphletId) && existing().id >= '';
+      allow list: if resource.data.id >= '';
+      allow create: if isVerifiedUser() &&
+        isValidId(pamphletId) &&
+        isValidCmsPamphlet(incoming(), pamphletId) &&
+        incoming().authorUid == request.auth.uid &&
+        incoming().createdAt == request.time &&
+        incoming().updatedAt == request.time &&
+        isAdmin();
+      allow update: if isVerifiedUser() &&
+        isValidId(pamphletId) &&
+        isValidCmsPamphlet(incoming(), pamphletId) &&
+        incoming().id == existing().id &&
+        incoming().authorUid == existing().authorUid &&
+        incoming().createdAt == existing().createdAt &&
+        incoming().updatedAt == request.time &&
+        incoming().diff(existing()).affectedKeys().hasOnly([
+          'title', 'subtitle', 'category', 'imageUrl', 'summary', 'keyPoints',
+          'recommendedAction', 'isDeleted', 'updatedBy', 'updatedAt'
+        ]) &&
+        isAdmin();
+      allow delete: if isVerifiedUser() && isValidId(pamphletId) && isAdmin();
+    }
+
+    // =========================================================================
+    // COLLECTION 14: /cmsDiseases/{diseaseId}
+    // =========================================================================
+    match /cmsDiseases/{diseaseId} {
+      allow get: if isValidId(diseaseId) && existing().id >= '';
+      allow list: if resource.data.id >= '';
+      allow create: if isVerifiedUser() &&
+        isValidId(diseaseId) &&
+        isValidCmsDisease(incoming(), diseaseId) &&
+        incoming().authorUid == request.auth.uid &&
+        incoming().createdAt == request.time &&
+        incoming().updatedAt == request.time &&
+        isAdmin();
+      allow update: if isVerifiedUser() &&
+        isValidId(diseaseId) &&
+        isValidCmsDisease(incoming(), diseaseId) &&
+        incoming().id == existing().id &&
+        incoming().authorUid == existing().authorUid &&
+        incoming().createdAt == existing().createdAt &&
+        incoming().updatedAt == request.time &&
+        incoming().diff(existing()).affectedKeys().hasOnly([
+          'namaPenyakit', 'singkatan', 'penyebab', 'kategori', 'tingkatBahaya',
+          'imageUrl', 'gejalaPria', 'gejalaWanita', 'caraPenularan', 'metodePencegahan',
+          'pengobatan', 'skriningPranikah', 'mitosFakta', 'isDeleted', 'updatedBy', 'updatedAt'
+        ]) &&
+        isAdmin();
+      allow delete: if isVerifiedUser() && isValidId(diseaseId) && isAdmin();
+    }
+
+    // =========================================================================
+    // COLLECTION 15: /cmsPosyanduArticles/{articleId}
+    // =========================================================================
+    match /cmsPosyanduArticles/{articleId} {
+      allow get: if isValidId(articleId) && existing().id >= '';
+      allow list: if resource.data.id >= '';
+      allow create: if isVerifiedUser() &&
+        isValidId(articleId) &&
+        isValidCmsPosyanduArticle(incoming(), articleId) &&
+        incoming().authorUid == request.auth.uid &&
+        incoming().createdAt == request.time &&
+        incoming().updatedAt == request.time &&
+        isAdmin();
+      allow update: if isVerifiedUser() &&
+        isValidId(articleId) &&
+        isValidCmsPosyanduArticle(incoming(), articleId) &&
+        incoming().id == existing().id &&
+        incoming().authorUid == existing().authorUid &&
+        incoming().createdAt == existing().createdAt &&
+        incoming().updatedAt == request.time &&
+        incoming().diff(existing()).affectedKeys().hasOnly([
+          'desaName', 'kecamatanName', 'title', 'hari', 'tanggal', 'waktu', 'lokasi',
+          'kategori', 'status', 'imageUrl', 'ringkasan', 'isiBeritaLengkap',
+          'contentMode', 'customHtml', 'narasumber',
+          'pesertaCount', 'hasilKegiatan', 'isDeleted', 'updatedBy', 'updatedAt'
+        ]) &&
+        isAdmin();
+      allow delete: if isVerifiedUser() && isValidId(articleId) && isAdmin();
+    }
+  }
+}

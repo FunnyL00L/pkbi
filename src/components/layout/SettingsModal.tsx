@@ -1,12 +1,40 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { X, Palette, Globe2, Sun, Moon, Check } from 'lucide-react';
+import {
+  X,
+  Palette,
+  Globe2,
+  Sun,
+  Moon,
+  Check,
+  ShieldCheck,
+  LogIn,
+  LogOut,
+  AlertCircle,
+  Loader2,
+  UserCheck,
+  Database,
+} from 'lucide-react';
 import { useAppTheme } from '../../context/ThemeContext';
+import { useAdminAuth } from '../../context/AuthContext';
 import { AppLanguage } from '../../types';
+import { GasCloudinaryConfigModal } from './GasCloudinaryConfigModal';
 
 export const SettingsModal: React.FC = () => {
   const { theme, setTheme, language, setLanguage, isSettingsOpen, setIsSettingsOpen } =
     useAppTheme();
+  const {
+    user,
+    isAdmin,
+    isAdminMode,
+    authLoading,
+    authError,
+    loginWithGoogle,
+    logoutAdmin,
+    clearAuthError,
+  } = useAdminAuth();
+
+  const [gasConfigOpen, setGasConfigOpen] = useState(false);
 
   if (!isSettingsOpen) return null;
 
@@ -48,14 +76,14 @@ export const SettingsModal: React.FC = () => {
                   ? 'Portal Settings'
                   : language === 'ban'
                   ? 'Setelan Portal PKBI'
-                  : 'Pengaturan Tampilan'}
+                  : 'Pengaturan Portal'}
               </h3>
               <p className="text-xs text-slate-600 dark:text-slate-400">
                 {language === 'en'
-                  ? 'Adjust display theme and language'
+                  ? 'Display theme, language, and admin access'
                   : language === 'ban'
-                  ? 'Pilih warna tampilan lan basa'
-                  : 'Sesuaikan tema warna dan bahasa antarmuka'}
+                  ? 'Pilih warna tampilan, basa, lan akses admin'
+                  : 'Tema tampilan, bahasa, serta akses Admin PKBI'}
               </p>
             </div>
 
@@ -172,6 +200,124 @@ export const SettingsModal: React.FC = () => {
                 })}
               </div>
             </div>
+
+            {/* External Admin Authentication (Firebase Google Sign-In) */}
+            <div className="pt-4 border-t border-slate-200 dark:border-slate-800 space-y-3">
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center gap-2 text-xs font-semibold text-blue-700 dark:text-sky-400">
+                  <ShieldCheck size={15} />
+                  <span>Akses Admin Relawan PKBI</span>
+                </div>
+                {isAdminMode && (
+                  <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 dark:bg-emerald-950/70 dark:text-emerald-300">
+                    Mode Admin Aktif
+                  </span>
+                )}
+              </div>
+
+              {authError && (
+                <div className="p-3 rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900 text-rose-700 dark:text-rose-300 text-xs flex items-start gap-2">
+                  <AlertCircle size={15} className="shrink-0 mt-0.5" />
+                  <div className="flex-1 space-y-1">
+                    <p>{authError}</p>
+                    <button
+                      type="button"
+                      onClick={clearAuthError}
+                      className="underline font-semibold cursor-pointer"
+                    >
+                      Tutup pesan
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {!user ? (
+                <div className="p-3.5 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/60 space-y-3">
+                  <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
+                    Masuk dengan akun Gmail Admin PKBI yang terdaftar di sistem autentikasi eksternal
+                    untuk menambah, memperbarui, atau menghapus kegiatan desa dan data pertumbuhan
+                    Desa Harmony. Pengunjung biasa tidak perlu login.
+                  </p>
+                  <button
+                    id="btn-admin-google-login"
+                    type="button"
+                    disabled={authLoading}
+                    onClick={loginWithGoogle}
+                    className="w-full min-h-[44px] px-4 py-2.5 rounded-xl bg-slate-900 dark:bg-sky-500 hover:bg-slate-800 dark:hover:bg-sky-400 text-white dark:text-slate-950 text-xs sm:text-sm font-bold flex items-center justify-center gap-2 transition-colors cursor-pointer disabled:opacity-60"
+                  >
+                    {authLoading ? (
+                      <Loader2 size={16} className="animate-spin" />
+                    ) : (
+                      <LogIn size={16} />
+                    )}
+                    <span>
+                      {authLoading ? 'Memverifikasi Akun...' : 'Login Admin dengan Gmail'}
+                    </span>
+                  </button>
+                </div>
+              ) : isAdmin ? (
+                <div className="p-3.5 rounded-2xl border border-emerald-200 dark:border-emerald-900/60 bg-emerald-50/70 dark:bg-emerald-950/30 space-y-3">
+                  <div className="flex items-start gap-2.5">
+                    <span className="w-9 h-9 rounded-xl bg-emerald-600 text-white flex items-center justify-center shrink-0">
+                      <UserCheck size={18} />
+                    </span>
+                    <div className="min-w-0">
+                      <div className="text-xs font-bold text-slate-900 dark:text-white truncate">
+                        {user.displayName || 'Admin Relawan PKBI Buleleng'}
+                      </div>
+                      <div className="text-[11px] text-slate-600 dark:text-slate-300 truncate">
+                        {user.email}
+                      </div>
+                      <p className="text-[11px] text-emerald-700 dark:text-emerald-300 mt-1 leading-snug">
+                        Mode Admin Firebase aktif. Anda dapat mengelola Desa, Agenda, Keluarga Asuh,
+                        Posyandu, Forum Remaja, Pamflet Catin, Artikel, Video, Katalog IMS &amp; FAQ.
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex flex-col sm:flex-row gap-2">
+                    <button
+                      id="btn-open-firebase-media-config"
+                      type="button"
+                      onClick={() => setGasConfigOpen(true)}
+                      className="flex-1 min-h-[40px] px-3.5 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+                    >
+                      <Database size={14} />
+                      <span>Pengaturan Media &amp; Firebase</span>
+                    </button>
+                    <button
+                      id="btn-admin-logout"
+                      type="button"
+                      disabled={authLoading}
+                      onClick={logoutAdmin}
+                      className="min-h-[40px] px-3.5 py-2 rounded-xl border border-rose-300 dark:border-rose-800 bg-white dark:bg-slate-900 text-rose-700 dark:text-rose-300 hover:bg-rose-50 dark:hover:bg-rose-950/40 text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+                    >
+                      <LogOut size={14} />
+                      <span>Keluar Admin</span>
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className="p-3.5 rounded-2xl border border-amber-200 dark:border-amber-900/60 bg-amber-50/70 dark:bg-amber-950/30 space-y-2.5">
+                  <div className="text-xs font-bold text-amber-900 dark:text-amber-200">
+                    Akun Tamu ({user.email})
+                  </div>
+                  <p className="text-[11px] text-amber-800 dark:text-amber-300 leading-relaxed">
+                    Email ini belum terdaftar sebagai Admin Relawan PKBI Buleleng. Portal tetap
+                    ditampilkan dalam mode pengunjung publik.
+                  </p>
+                  <button
+                    id="btn-admin-logout"
+                    type="button"
+                    disabled={authLoading}
+                    onClick={logoutAdmin}
+                    className="w-full min-h-[40px] px-3.5 py-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-200 text-xs font-semibold flex items-center justify-center gap-1.5 cursor-pointer"
+                  >
+                    <LogOut size={14} />
+                    <span>Keluar Akun</span>
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
 
           <div className="pt-4 border-t border-slate-200 dark:border-slate-800 flex items-center justify-end">
@@ -184,6 +330,13 @@ export const SettingsModal: React.FC = () => {
             </button>
           </div>
         </motion.div>
+
+        {isAdminMode && (
+          <GasCloudinaryConfigModal
+            isOpen={gasConfigOpen}
+            onClose={() => setGasConfigOpen(false)}
+          />
+        )}
       </div>
     </AnimatePresence>
   );

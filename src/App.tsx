@@ -10,18 +10,21 @@ import { NavigationHub } from './components/hub/NavigationHub';
 const MapKecamatan = lazy(() =>
   import('./components/map/MapKecamatan').then((m) => ({ default: m.MapKecamatan }))
 );
-const DesaBinaanSection = lazy(() =>
-  import('./components/desa/DesaBinaanSection').then((m) => ({ default: m.DesaBinaanSection }))
-);
-const PendaftaranDanQASection = lazy(() =>
-  import('./components/qa/PendaftaranDanQASection').then((m) => ({
-    default: m.PendaftaranDanQASection,
+const DesaHarmonySection = lazy(() =>
+  import('./components/desa/DesaHarmonySection').then((m) => ({
+    default: m.DesaHarmonySection,
   }))
+);
+const CatinSection = lazy(() =>
+  import('./components/catin/CatinSection').then((m) => ({ default: m.CatinSection }))
 );
 const EdukasiInteraktifSection = lazy(() =>
   import('./components/edukasi/EdukasiInteraktifSection').then((m) => ({
     default: m.EdukasiInteraktifSection,
   }))
+);
+const QnaSection = lazy(() =>
+  import('./components/qna/QnaSection').then((m) => ({ default: m.QnaSection }))
 );
 
 const SectionSkeleton: React.FC = () => (
@@ -36,71 +39,99 @@ const SectionSkeleton: React.FC = () => (
   </div>
 );
 
-const getCategoryFromPath = (path: string, search = ''): ContentCategory | null => {
+interface ParsedRouteState {
+  category: ContentCategory | null;
+  mapMode: 'peta' | 'laporan';
+}
+
+const getRouteStateFromPath = (path: string, search = ''): ParsedRouteState => {
   const params = new URLSearchParams(search);
   const viewParam = params.get('view')?.toLowerCase();
-  if (
-    viewParam === 'map' ||
-    viewParam === 'desa-binaan' ||
-    viewParam === 'pendaftaran-qa' ||
-    viewParam === 'edukasi-interaktif'
-  ) {
-    return viewParam;
+
+  if (viewParam === 'laporan') {
+    return { category: 'map', mapMode: 'laporan' };
   }
+  if (viewParam === 'map') return { category: 'map', mapMode: 'peta' };
+  if (viewParam === 'desa-harmony' || viewParam === 'desa-binaan')
+    return { category: 'desa-harmony', mapMode: 'peta' };
+  if (viewParam === 'catin' || viewParam === 'pendaftaran')
+    return { category: 'catin', mapMode: 'peta' };
+  if (viewParam === 'edukasi-kespro' || viewParam === 'edukasi-interaktif')
+    return { category: 'edukasi-kespro', mapMode: 'peta' };
+  if (viewParam === 'qna' || viewParam === 'pendaftaran-qa')
+    return { category: 'qna', mapMode: 'peta' };
 
   const clean = path.toLowerCase().replace(/\/+$/, '') || '/';
-  if (clean === '/map' || clean.startsWith('/map')) return 'map';
-  if (clean === '/edukasi' || clean.startsWith('/edukasi')) return 'edukasi-interaktif';
-  if (clean === '/desa' || clean === '/desa-binaan' || clean.startsWith('/desa'))
-    return 'desa-binaan';
-  if (
-    clean === '/qa' ||
-    clean === '/qna' ||
-    clean === '/pendaftaran' ||
-    clean === '/pendaftaran-qa' ||
-    clean.startsWith('/qa')
-  ) {
-    return 'pendaftaran-qa';
+  if (clean === '/laporan' || clean.startsWith('/laporan')) {
+    return { category: 'map', mapMode: 'laporan' };
   }
-  return null;
+  if (clean === '/map' || clean.startsWith('/map')) {
+    return { category: 'map', mapMode: 'peta' };
+  }
+  if (clean === '/desa-harmony' || clean === '/desa-binaan' || clean.startsWith('/desa')) {
+    return { category: 'desa-harmony', mapMode: 'peta' };
+  }
+  if (clean === '/catin' || clean === '/pendaftaran' || clean.startsWith('/catin')) {
+    return { category: 'catin', mapMode: 'peta' };
+  }
+  if (clean === '/edukasi' || clean === '/edukasi-kespro' || clean.startsWith('/edukasi')) {
+    return { category: 'edukasi-kespro', mapMode: 'peta' };
+  }
+  if (clean === '/qna' || clean === '/qa' || clean.startsWith('/qn') || clean.startsWith('/qa')) {
+    return { category: 'qna', mapMode: 'peta' };
+  }
+
+  return { category: null, mapMode: 'peta' };
 };
 
-const getPathFromCategory = (cat: ContentCategory | null): string => {
+const getPathFromCategory = (
+  cat: ContentCategory | null,
+  mapMode: 'peta' | 'laporan' = 'peta'
+): string => {
   switch (cat) {
     case 'map':
-      return '/map';
-    case 'edukasi-interaktif':
+      return mapMode === 'laporan' ? '/laporan' : '/map';
+    case 'desa-harmony':
+      return '/desa-harmony';
+    case 'catin':
+      return '/catin';
+    case 'edukasi-kespro':
       return '/edukasi';
-    case 'desa-binaan':
-      return '/desa-binaan';
-    case 'pendaftaran-qa':
-      return '/qa';
+    case 'qna':
+      return '/qna';
     default:
       return '/';
   }
 };
 
 export default function App() {
-  const [activeCategory, setActiveCategory] = useState<ContentCategory | null>(() => {
-    if (typeof window !== 'undefined') {
-      return getCategoryFromPath(window.location.pathname, window.location.search);
-    }
-    return null;
-  });
+  const initial =
+    typeof window !== 'undefined'
+      ? getRouteStateFromPath(window.location.pathname, window.location.search)
+      : { category: null, mapMode: 'peta' as const };
+
+  const [activeCategory, setActiveCategory] = useState<ContentCategory | null>(initial.category);
+  const [mapViewMode, setMapViewMode] = useState<'peta' | 'laporan'>(initial.mapMode);
 
   useEffect(() => {
     const handlePopState = () => {
-      setActiveCategory(
-        getCategoryFromPath(window.location.pathname, window.location.search)
-      );
+      const parsed = getRouteStateFromPath(window.location.pathname, window.location.search);
+      setActiveCategory(parsed.category);
+      setMapViewMode(parsed.mapMode);
     };
     window.addEventListener('popstate', handlePopState);
     return () => window.removeEventListener('popstate', handlePopState);
   }, []);
 
-  const handleSelectCategory = (cat: ContentCategory) => {
+  const handleSelectCategory = (
+    cat: ContentCategory,
+    preferredMapMode: 'peta' | 'laporan' = 'peta'
+  ) => {
     setActiveCategory(cat);
-    const targetPath = getPathFromCategory(cat);
+    if (cat === 'map') {
+      setMapViewMode(preferredMapMode);
+    }
+    const targetPath = getPathFromCategory(cat, cat === 'map' ? preferredMapMode : 'peta');
     if (window.location.pathname !== targetPath) {
       window.history.pushState({}, '', targetPath);
     }
@@ -109,20 +140,29 @@ export default function App() {
 
   const handleBackToMainMenu = () => {
     setActiveCategory(null);
+    setMapViewMode('peta');
     if (window.location.pathname !== '/') {
       window.history.pushState({}, '', '/');
     }
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
+  const handleMapModeChange = (mode: 'peta' | 'laporan') => {
+    setMapViewMode(mode);
+    const targetPath = mode === 'laporan' ? '/laporan' : '/map';
+    if (window.location.pathname !== targetPath) {
+      window.history.pushState({}, '', targetPath);
+    }
+  };
+
   return (
     <div className="min-h-screen font-sans flex flex-col bg-slate-50 dark:bg-[#060c1c] text-slate-900 dark:text-slate-50 selection:bg-blue-600 selection:text-white relative transition-colors">
-      {/* 1. HOME / GOLDEN RATIO NAVIGATION HUB */}
+      {/* 1. HOME / GOLDEN RATIO 5-NODE NAVIGATION HUB */}
       {!activeCategory && (
         <main className="flex-1 flex flex-col justify-center">
           <NavigationHub
             activeCategory={activeCategory}
-            onSelectCategory={handleSelectCategory}
+            onSelectCategory={(cat) => handleSelectCategory(cat)}
           />
         </main>
       )}
@@ -132,7 +172,7 @@ export default function App() {
         <>
           <Header
             activeCategory={activeCategory}
-            onSelectCategory={handleSelectCategory}
+            onSelectCategory={(cat) => handleSelectCategory(cat)}
             onBackToMainMenu={handleBackToMainMenu}
           />
 
@@ -148,38 +188,44 @@ export default function App() {
                     transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
                   >
                     <MapKecamatan
-                      onNavigateToProgram={() => handleSelectCategory('pendaftaran-qa')}
+                      viewMode={mapViewMode}
+                      onViewModeChange={handleMapModeChange}
+                      onNavigateToCatin={() => handleSelectCategory('catin')}
                     />
                   </motion.div>
                 )}
 
-                {activeCategory === 'desa-binaan' && (
+                {activeCategory === 'desa-harmony' && (
                   <motion.div
-                    key="cat-desa"
+                    key="cat-desa-harmony"
                     initial={{ opacity: 0, x: 24 }}
                     animate={{ opacity: 1, x: 0 }}
                     exit={{ opacity: 0, x: -20 }}
                     transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
                   >
-                    <DesaBinaanSection />
+                    <DesaHarmonySection
+                      onNavigateToQna={() => handleSelectCategory('qna')}
+                    />
                   </motion.div>
                 )}
 
-                {activeCategory === 'pendaftaran-qa' && (
+                {activeCategory === 'catin' && (
                   <motion.div
-                    key="cat-pendaftaran"
+                    key="cat-catin"
                     initial={{ opacity: 0, x: 24 }}
                     animate={{ opacity: 1, x: 0 }}
                     exit={{ opacity: 0, x: -20 }}
                     transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
                   >
-                    <PendaftaranDanQASection />
+                    <CatinSection
+                      onNavigateToQna={() => handleSelectCategory('qna')}
+                    />
                   </motion.div>
                 )}
 
-                {activeCategory === 'edukasi-interaktif' && (
+                {activeCategory === 'edukasi-kespro' && (
                   <motion.div
-                    key="cat-edukasi"
+                    key="cat-edukasi-kespro"
                     initial={{ opacity: 0, x: 24 }}
                     animate={{ opacity: 1, x: 0 }}
                     exit={{ opacity: 0, x: -20 }}
@@ -188,14 +234,25 @@ export default function App() {
                     <EdukasiInteraktifSection />
                   </motion.div>
                 )}
+
+                {activeCategory === 'qna' && (
+                  <motion.div
+                    key="cat-qna"
+                    initial={{ opacity: 0, x: 24 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: -20 }}
+                    transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
+                  >
+                    <QnaSection />
+                  </motion.div>
+                )}
               </AnimatePresence>
             </Suspense>
           </main>
 
           <BottomNav
             activeCategory={activeCategory}
-            onSelectCategory={handleSelectCategory}
-            onGoHome={handleBackToMainMenu}
+            onSelectCategory={(cat) => handleSelectCategory(cat)}
           />
         </>
       )}
